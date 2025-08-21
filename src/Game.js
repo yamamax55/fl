@@ -245,18 +245,36 @@ export class Game {
         const allianceFleets = this.fleets.filter(fleet => fleet.faction === 'alliance' && fleet.currentHP > 0);
         
         empireFleets.forEach(empireFleet => {
-            // いずれかの同盟艦隊のZOC範囲内にいるかチェック
-            const isVisible = allianceFleets.some(allianceFleet => 
+            const currentTime = Date.now();
+            
+            // 戦闘状態の時間経過をチェック
+            if (empireFleet.isInCombat && (currentTime - empireFleet.lastCombatTime) > empireFleet.combatVisibilityDuration) {
+                empireFleet.isInCombat = false;
+            }
+            
+            // 視認性判定：ZOC内 または 戦闘中
+            const isInZOC = allianceFleets.some(allianceFleet => 
                 allianceFleet.isInZOCRange(empireFleet)
             );
+            const isInCombat = empireFleet.isInCombat;
+            const isVisible = isInZOC || isInCombat;
             
             // 艦隊本体、HPバー、番号を連動表示/非表示
             empireFleet.visible = isVisible;
+            
+            // デバッグログ（戦闘状態時のみ）
+            if (isInCombat && !isInZOC) {
+                console.log(`${empireFleet.name} 戦闘特例表示中 (ZOC外だが戦闘中)`);
+            }
         });
         
-        // 同盟艦隊は常に表示
+        // 同盟艦隊も戦闘状態をリセット（時間経過チェック）
         allianceFleets.forEach(allianceFleet => {
-            allianceFleet.visible = true;
+            const currentTime = Date.now();
+            if (allianceFleet.isInCombat && (currentTime - allianceFleet.lastCombatTime) > allianceFleet.combatVisibilityDuration) {
+                allianceFleet.isInCombat = false;
+            }
+            allianceFleet.visible = true; // 同盟艦隊は常に表示
         });
     }
     

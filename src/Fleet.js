@@ -41,6 +41,11 @@ export class Fleet extends PIXI.Container {
         this.zocTarget = null; // ZOC内の追跡対象
         this.isZOCRotating = false; // ZOC自動回転中フラグ
         
+        // 戦闘時視界特例システム
+        this.isInCombat = false; // 戦闘中フラグ
+        this.lastCombatTime = 0; // 最後の戦闘時刻
+        this.combatVisibilityDuration = 1000; // 戦闘後の視界継続時間（ミリ秒）
+        
         // 艦隊本体（三角形）
         this.ship = new PIXI.Container();
         this.shipGraphics = new PIXI.Graphics();
@@ -637,8 +642,15 @@ export class Fleet extends PIXI.Container {
             window.gameState.audio.playLaser();
         }
         
+        // 戦闘状態を両艦隊に設定（戦闘時視界特例のため）
+        const currentTime = Date.now();
+        this.isInCombat = true;
+        this.lastCombatTime = currentTime;
+        target.isInCombat = true;
+        target.lastCombatTime = currentTime;
+        
         const isDestroyed = target.takeDamage(this.attackPower);
-        console.log(`${this.name} が ${target.name} を攻撃！ (残りHP: ${target.currentHP})`);
+        console.log(`${this.name} が ${target.name} を攻撃！ (残りHP: ${target.currentHP}) [戦闘状態: 両艦隊]`);
         
         if (isDestroyed) {
             // 爆発エフェクト作成
