@@ -17,6 +17,14 @@ export class Game {
             box: null
         };
         
+        // ゲームプレイエリアの定義（UIと重ならないように）
+        this.gameArea = {
+            x: 300,      // 左側UIパネルを避ける
+            y: 80,       // 上部UIパネルを避ける
+            width: 700,  // 1280 - 300(左) - 280(右) = 700
+            height: 580  // 720 - 80(上) - 60(下) = 580
+        };
+        
         // グローバル状態として設定
         window.gameState = this;
     }
@@ -74,11 +82,11 @@ export class Game {
     }
     
     createFleets() {
-        // 自由惑星同盟艦隊（青色）
+        // 自由惑星同盟艦隊（青色）- ゲームエリア内に配置
         for (let i = 0; i < 3; i++) {
             const fleet = new Fleet(
-                150 + i * 60,         // x座標
-                300 + i * 80,         // y座標
+                this.gameArea.x + 50 + i * 60,    // x座標（ゲームエリア内）
+                this.gameArea.y + 220 + i * 80,   // y座標（ゲームエリア内）
                 0x0000ff,             // 青色
                 `同盟第${i + 1}艦隊`,   // 名前
                 'alliance',           // 陣営
@@ -92,11 +100,11 @@ export class Game {
             fleet.initializeGhostFleet(this.app.stage);
         }
         
-        // 銀河帝国艦隊（赤色）
+        // 銀河帝国艦隊（赤色）- ゲームエリア内に配置
         for (let i = 0; i < 3; i++) {
             const fleet = new Fleet(
-                950 + i * 60,         // x座標
-                300 + i * 80,         // y座標
+                this.gameArea.x + this.gameArea.width - 110 + i * 60,  // x座標（ゲームエリア右側）
+                this.gameArea.y + 220 + i * 80,                       // y座標（ゲームエリア内）
                 0xff0000,             // 赤色
                 `帝国第${i + 1}艦隊`,   // 名前
                 'empire',             // 陣営
@@ -144,6 +152,11 @@ export class Game {
             const x = event.global.x;
             const y = event.global.y;
             
+            // ゲームエリア外のクリックは無視
+            if (!this.isInGameArea(x, y)) {
+                return;
+            }
+            
             // 艦隊がクリックされたかチェック
             let fleetClicked = false;
             for (const fleet of this.fleets) {
@@ -161,8 +174,8 @@ export class Game {
                     this.fleets.forEach(fleet => fleet.deselect());
                 }
                 
-                // ドラッグ選択開始（艦隊クリック時は除外）
-                if (!fleetClicked) {
+                // ドラッグ選択開始（艦隊クリック時は除外、ゲームエリア内のみ）
+                if (!fleetClicked && this.isInGameArea(x, y)) {
                     this.dragSelection.isDragging = true;
                     this.dragSelection.startX = x;
                     this.dragSelection.startY = y;
@@ -278,9 +291,37 @@ export class Game {
         });
     }
     
+    // ゲームエリア内かどうかチェック
+    isInGameArea(x, y) {
+        return x >= this.gameArea.x && 
+               x <= this.gameArea.x + this.gameArea.width &&
+               y >= this.gameArea.y && 
+               y <= this.gameArea.y + this.gameArea.height;
+    }
+    
+    // 艦隊の移動をゲームエリア内に制限
+    constrainToGameArea(fleet) {
+        const margin = 30; // 艦隊サイズを考慮したマージン
+        
+        fleet.targetX = Math.max(this.gameArea.x + margin, 
+                        Math.min(this.gameArea.x + this.gameArea.width - margin, fleet.targetX));
+        fleet.targetY = Math.max(this.gameArea.y + margin, 
+                        Math.min(this.gameArea.y + this.gameArea.height - margin, fleet.targetY));
+        
+        // 現在位置も制限
+        fleet.x = Math.max(this.gameArea.x + margin, 
+                  Math.min(this.gameArea.x + this.gameArea.width - margin, fleet.x));
+        fleet.y = Math.max(this.gameArea.y + margin, 
+                  Math.min(this.gameArea.y + this.gameArea.height - margin, fleet.y));
+    }
+    
     startGameLoop() {
         this.app.ticker.add(() => {
-            this.fleets.forEach(fleet => fleet.update());
+            this.fleets.forEach(fleet => {
+                fleet.update();
+                // 艦隊をゲームエリア内に制限
+                this.constrainToGameArea(fleet);
+            });
             this.updateVisibility(); // 毎フレーム視界更新
             this.ui.update();
             this.effects.update();
