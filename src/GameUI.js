@@ -164,12 +164,12 @@ export class GameUI {
         
         // 移動モードボタン
         this.moveButton = this.createButton('移動モード', startX, buttonY, buttonWidth, buttonHeight, 0x00aa00);
-        this.moveButton.on('pointerdown', () => this.setAllSelectedFleetsMode('move'));
+        this.moveButton.button.on('pointerdown', () => this.setAllSelectedFleetsMode('move'));
         this.bottomPanel.addChild(this.moveButton.container);
         
         // 回転モードボタン
         this.rotateButton = this.createButton('回転モード', startX + 130, buttonY, buttonWidth, buttonHeight, 0xaa4444);
-        this.rotateButton.on('pointerdown', () => this.setAllSelectedFleetsMode('rotate'));
+        this.rotateButton.button.on('pointerdown', () => this.setAllSelectedFleetsMode('rotate'));
         this.bottomPanel.addChild(this.rotateButton.container);
     }
     
@@ -182,17 +182,17 @@ export class GameUI {
         
         // 全選択ボタン
         const selectAllBtn = this.createButton('全選択', startX, buttonY, buttonWidth, buttonHeight, 0x4444aa);
-        selectAllBtn.on('pointerdown', () => this.selectAllAlliance());
+        selectAllBtn.button.on('pointerdown', () => this.selectAllAlliance());
         this.bottomPanel.addChild(selectAllBtn.container);
         
         // 選択解除ボタン
         const deselectBtn = this.createButton('選択解除', startX + 110, buttonY, buttonWidth, buttonHeight, 0xaa6644);
-        deselectBtn.on('pointerdown', () => this.deselectAll());
+        deselectBtn.button.on('pointerdown', () => this.deselectAll());
         this.bottomPanel.addChild(deselectBtn.container);
         
         // 停止命令ボタン
         const stopBtn = this.createButton('停止', startX + 220, buttonY, buttonWidth, buttonHeight, 0xaa4444);
-        stopBtn.on('pointerdown', () => this.stopAllSelected());
+        stopBtn.button.on('pointerdown', () => this.stopAllSelected());
         this.bottomPanel.addChild(stopBtn.container);
     }
     
