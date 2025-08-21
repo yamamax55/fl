@@ -19,7 +19,8 @@ export class Fleet extends PIXI.Container {
         this.range = 150; // 射程距離
         this.lastAttackTime = 0; // 最後の攻撃時間
         this.attackCooldown = 1000; // 攻撃間隔（ミリ秒）
-        this.facing = Math.PI / 2; // 向き（ラジアン）右向きを初期設定
+        // 陣営による初期向き設定（対峙配置）
+        this.facing = faction === 'alliance' ? Math.PI / 2 : -Math.PI / 2; // 同盟軍：右向き、帝国軍：左向き
         this.shipColor = color;
         
         // インタラクションモード管理
@@ -593,6 +594,30 @@ export class Fleet extends PIXI.Container {
         }
     }
     
+    // 艦隊の完全削除処理
+    destroy() {
+        try {
+            // ゴースト艦隊をステージから削除
+            if (this.ghostFleet && this.ghostFleet.parent) {
+                this.ghostFleet.parent.removeChild(this.ghostFleet);
+                this.ghostFleet.destroy();
+                console.log(`${this.name} のゴースト艦隊を削除`);
+            }
+            
+            // 選択状態をクリア
+            this.deselect();
+            
+            // 本体をステージから削除
+            if (this.parent) {
+                this.parent.removeChild(this);
+            }
+            
+            console.log(`${this.name} を完全削除しました`);
+        } catch (error) {
+            console.error(`${this.name} 削除中にエラー:`, error);
+        }
+    }
+    
     // 攻撃実行
     attack(target) {
         const currentTime = Date.now();
@@ -631,8 +656,8 @@ export class Fleet extends PIXI.Container {
                 window.gameState.ui.recordDestroy(target);
             }
             
-            // 撃破された艦隊をゲームから除去
-            window.gameState.app.stage.removeChild(target);
+            // 撃破された艦隊を完全削除（ゴースト艦隊も含む）
+            target.destroy();
             window.gameState.fleets = window.gameState.fleets.filter(f => f !== target);
         }
     }
