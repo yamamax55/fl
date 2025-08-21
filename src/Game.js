@@ -82,7 +82,8 @@ export class Game {
                 0x0000ff,             // 青色
                 `同盟第${i + 1}艦隊`,   // 名前
                 'alliance',           // 陣営
-                `alliance_${i}`       // ID
+                `alliance_${i}`,      // ID
+                i + 1                 // 艦隊番号
             );
             this.fleets.push(fleet);
             this.app.stage.addChild(fleet);
@@ -99,7 +100,8 @@ export class Game {
                 0xff0000,             // 赤色
                 `帝国第${i + 1}艦隊`,   // 名前
                 'empire',             // 陣営
-                `empire_${i}`         // ID
+                `empire_${i}`,        // ID
+                i + 1                 // 艦隊番号
             );
             this.fleets.push(fleet);
             this.app.stage.addChild(fleet);

@@ -2,12 +2,13 @@ import * as PIXI from 'pixi.js';
 
 // 艦隊クラス
 export class Fleet extends PIXI.Container {
-    constructor(x, y, color, name, faction, id) {
+    constructor(x, y, color, name, faction, id, fleetNumber) {
         super();
         
         this.id = id;
         this.name = name;
         this.faction = faction; // 'empire' or 'alliance'
+        this.fleetNumber = fleetNumber; // 艦隊番号（1, 2, 3など）
         this.targetX = x;
         this.targetY = y;
         this.isSelected = false;
@@ -40,8 +41,28 @@ export class Fleet extends PIXI.Container {
         this.isZOCRotating = false; // ZOC自動回転中フラグ
         
         // 艦隊本体（三角形）
-        this.ship = new PIXI.Graphics();
+        this.ship = new PIXI.Container();
+        this.shipGraphics = new PIXI.Graphics();
         this.drawShip();
+        this.ship.addChild(this.shipGraphics);
+        
+        // 艦隊番号テキスト
+        this.fleetNumberText = new PIXI.Text({
+            text: this.fleetNumber.toString(),
+            style: {
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fill: 0xffffff,
+                stroke: { color: 0x000000, width: 1, alpha: 0.8 },
+                align: 'center'
+            }
+        });
+        this.fleetNumberText.anchor.set(0.5, 0.5);
+        this.fleetNumberText.x = 0;
+        this.fleetNumberText.y = 0;
+        this.ship.addChild(this.fleetNumberText);
+        
         this.addChild(this.ship);
         
         // HPバー背景
@@ -101,7 +122,7 @@ export class Fleet extends PIXI.Container {
     
     // 艦隊の三角形描画
     drawShip() {
-        this.ship.clear();
+        this.shipGraphics.clear();
         
         // 三角形の座標（上向きの矢印形状）
         const points = [
@@ -110,11 +131,11 @@ export class Fleet extends PIXI.Container {
             12, 10     // 右下
         ];
         
-        this.ship.poly(points);
-        this.ship.fill(this.shipColor);
-        this.ship.stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
+        this.shipGraphics.poly(points);
+        this.shipGraphics.fill(this.shipColor);
+        this.shipGraphics.stroke({ width: 1, color: 0xffffff, alpha: 0.8 });
         
-        // 向きに応じて回転
+        // 向きに応じて回転（shipコンテナ全体を回転）
         this.ship.rotation = this.facing;
     }
     
