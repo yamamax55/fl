@@ -1,0 +1,36 @@
+// Web Audio APIベースのサウンドシステム
+export class Audio {
+    constructor() {
+        this.audioContext = null;
+        this.sounds = new Map();
+        this.isInitialized = false;
+        this.isMuted = false;
+        this.masterVolume = 0.3;
+        
+        this.bgmGainNode = null;
+        this.sfxGainNode = null;
+        this.currentBGM = null;
+        
+        // サウンド定義（プロシージャル生成）
+        this.soundDefinitions = {
+            laser: {
+                frequency: 800,
+                duration: 0.1,
+                type: 'square'
+            },
+            explosion: {
+                frequency: 200,
+                duration: 0.5,
+                type: 'sawtooth'
+            },
+            select: {
+                frequency: 600,
+                duration: 0.05,
+                type: 'sine'
+            },
+            bgm: {
+                frequency: 220, // A3
+                duration: 8.0, // 8秒のループ
+                type: 'triangle'
+            }
+        };\n        \n        this.init();\n    }\n    \n    async init() {\n        try {\n            // Web Audio APIの初期化\n            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();\n            \n            // マスターゲインノード作成\n            this.masterGainNode = this.audioContext.createGain();\n            this.masterGainNode.gain.value = this.masterVolume;\n            this.masterGainNode.connect(this.audioContext.destination);\n            \n            // BGM用とSFX用のゲインノード作成\n            this.bgmGainNode = this.audioContext.createGain();\n            this.bgmGainNode.gain.value = 0.2; // BGMは小さめ\n            this.bgmGainNode.connect(this.masterGainNode);\n            \n            this.sfxGainNode = this.audioContext.createGain();\n            this.sfxGainNode.gain.value = 0.5; // SFXは通常音量\n            this.sfxGainNode.connect(this.masterGainNode);\n            \n            this.isInitialized = true;\n            console.log('オーディオシステム初期化完了');\n            \n        } catch (error) {\n            console.warn('オーディオシステム初期化失敗:', error);\n        }\n    }\n    \n    // ユーザーインタラクション後にオーディオコンテキストを再開\n    async resume() {\n        if (this.audioContext && this.audioContext.state === 'suspended') {\n            await this.audioContext.resume();\n            console.log('オーディオコンテキスト再開');\n        }\n    }\n    \n    // プロシージャルサウンド生成\n    createSound(definition, gainNode = this.sfxGainNode) {\n        if (!this.isInitialized || this.isMuted) return;\n        \n        try {\n            const oscillator = this.audioContext.createOscillator();\n            const gainControl = this.audioContext.createGain();\n            \n            oscillator.type = definition.type;\n            oscillator.frequency.value = definition.frequency;\n            \n            // エンベロープ（音量の変化）\n            const now = this.audioContext.currentTime;\n            gainControl.gain.setValueAtTime(0, now);\n            gainControl.gain.linearRampToValueAtTime(0.3, now + 0.01); // アタック\n            gainControl.gain.exponentialRampToValueAtTime(0.01, now + definition.duration); // ディケイ\n            \n            oscillator.connect(gainControl);\n            gainControl.connect(gainNode);\n            \n            oscillator.start(now);\n            oscillator.stop(now + definition.duration);\n            \n            return oscillator;\n        } catch (error) {\n            console.warn('サウンド再生エラー:', error);\n        }\n    }\n    \n    // BGM再生（シンプルなメロディー）\n    async startBGM() {\n        if (!this.isInitialized || this.isMuted || this.currentBGM) return;\n        \n        try {\n            // 宇宙的なアンビエント風BGM\n            const playNote = (frequency, startTime, duration) => {\n                const oscillator = this.audioContext.createOscillator();\n                const gainControl = this.audioContext.createGain();\n                \n                oscillator.type = 'triangle';\n                oscillator.frequency.value = frequency;\n                \n                gainControl.gain.setValueAtTime(0, startTime);\n                gainControl.gain.linearRampToValueAtTime(0.1, startTime + 0.1);\n                gainControl.gain.linearRampToValueAtTime(0.05, startTime + duration - 0.1);\n                gainControl.gain.linearRampToValueAtTime(0, startTime + duration);\n                \n                oscillator.connect(gainControl);\n                gainControl.connect(this.bgmGainNode);\n                \n                oscillator.start(startTime);\n                oscillator.stop(startTime + duration);\n            };\n            \n            // BGMループの作成\n            const createBGMLoop = () => {\n                const now = this.audioContext.currentTime;\n                const notes = [\n                    220,  // A3\n                    247,  // B3\n                    262,  // C4\n                    294,  // D4\n                    330,  // E4\n                    294,  // D4\n                    262,  // C4\n                    247   // B3\n                ];\n                \n                notes.forEach((freq, index) => {\n                    playNote(freq, now + index * 1, 0.8);\n                });\n                \n                // 8秒後に再実行\n                this.currentBGM = setTimeout(createBGMLoop, 8000);\n            };\n            \n            createBGMLoop();\n            console.log('BGM開始');\n            \n        } catch (error) {\n            console.warn('BGM再生エラー:', error);\n        }\n    }\n    \n    stopBGM() {\n        if (this.currentBGM) {\n            clearTimeout(this.currentBGM);\n            this.currentBGM = null;\n            console.log('BGM停止');\n        }\n    }\n    \n    // 効果音再生\n    playLaser() {\n        this.createSound(this.soundDefinitions.laser);\n    }\n    \n    playExplosion() {\n        this.createSound(this.soundDefinitions.explosion);\n    }\n    \n    playSelect() {\n        this.createSound(this.soundDefinitions.select);\n    }\n    \n    // ボリューム制御\n    setMasterVolume(volume) {\n        this.masterVolume = Math.max(0, Math.min(1, volume));\n        if (this.masterGainNode) {\n            this.masterGainNode.gain.value = this.masterVolume;\n        }\n    }\n    \n    setBGMVolume(volume) {\n        if (this.bgmGainNode) {\n            this.bgmGainNode.gain.value = Math.max(0, Math.min(1, volume));\n        }\n    }\n    \n    setSFXVolume(volume) {\n        if (this.sfxGainNode) {\n            this.sfxGainNode.gain.value = Math.max(0, Math.min(1, volume));\n        }\n    }\n    \n    // ミュート制御\n    toggleMute() {\n        this.isMuted = !this.isMuted;\n        if (this.masterGainNode) {\n            this.masterGainNode.gain.value = this.isMuted ? 0 : this.masterVolume;\n        }\n        \n        if (this.isMuted) {\n            this.stopBGM();\n        } else {\n            this.startBGM();\n        }\n        \n        return this.isMuted;\n    }\n    \n    // クリーンアップ\n    destroy() {\n        this.stopBGM();\n        \n        if (this.audioContext) {\n            this.audioContext.close();\n        }\n    }\n}

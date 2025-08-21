@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { Fleet } from './Fleet.js';
-import { GameUI } from './GameUI.js';
+import { UI } from './UI.js';
+import { Effects } from './Effects.js';
+import { Audio } from './Audio.js';
 
 // ゲーム管理クラス
 export class Game {
@@ -42,7 +44,13 @@ export class Game {
         this.createFleets();
         
         // UI初期化
-        this.ui = new GameUI(this.app);
+        this.ui = new UI(this.app);
+        
+        // エフェクトシステム初期化
+        this.effects = new Effects(this.app);
+        
+        // オーディオシステム初期化
+        this.audio = new Audio();
         
         // イベント設定
         this.setupEvents();
@@ -56,7 +64,13 @@ export class Game {
             loadingElement.remove();
         }
         
-        console.log('Galaxy RTS初期化完了 - Phase 3: 多艦隊管理と戦闘システム実装');
+        // オーディオ開始（ユーザー操作後）
+        document.addEventListener('click', () => {
+            this.audio.resume();
+            this.audio.startBGM();
+        }, { once: true });
+        
+        console.log('Galaxy RTS初期化完了 - Phase 4: UIシステムと演出強化');
     }
     
     createFleets() {
@@ -192,6 +206,7 @@ export class Game {
         this.app.ticker.add(() => {
             this.fleets.forEach(fleet => fleet.update());
             this.ui.update();
+            this.effects.update();
         });
     }
 }
