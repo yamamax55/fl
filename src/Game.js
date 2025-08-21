@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Fleet } from './Fleet.js';
-import { UI } from './UI.js';
+import { GameUI } from './GameUI.js';
 import { Effects } from './Effects.js';
 import { Audio } from './Audio.js';
 
@@ -44,7 +44,7 @@ export class Game {
         this.createFleets();
         
         // UI初期化
-        this.ui = new UI(this.app);
+        this.ui = new GameUI(this.app);
         
         // エフェクトシステム初期化
         this.effects = new Effects(this.app);
@@ -107,47 +107,76 @@ export class Game {
         // マウスイベント処理
         this.app.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
         
-        // ポインターダウン
+        // 右クリック移動専用処理（canvas直接）
         this.app.canvas.addEventListener('pointerdown', (event) => {
-            const rect = this.app.canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
+            if (event.button === 2) { // 右クリック
+                event.preventDefault();
+                const rect = this.app.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                
+                const selectedFleets = this.fleets.filter(fleet => fleet.isSelected);
+                console.log(`右クリック操作: 選択艦隊数=${selectedFleets.length}, 目標座標=(${x}, ${y})`);
+                
+                selectedFleets.forEach(fleet => {
+                    if (fleet.interactionMode === 'move') {
+                        console.log(`${fleet.name} が (${x}, ${y}) に移動指示`);
+                        fleet.moveTo(x - 20, y - 20); // 中心調整
+                    } else if (fleet.interactionMode === 'rotate') {
+                        console.log(`${fleet.name} が (${x}, ${y}) 方向に回転指示`);
+                        fleet.rotateTo(x - 20, y - 20); // 中心調整
+                    }
+                });
+                return;
+            }
+        });
+        
+        // 選択処理（ステージレベル）
+        this.app.stage.addEventListener('pointerdown', (event) => {
+            const x = event.global.x;
+            const y = event.global.y;
+            
+            // 艦隊がクリックされたかチェック
+            let fleetClicked = false;
+            for (const fleet of this.fleets) {
+                const bounds = fleet.getBounds();
+                if (x >= bounds.x && x <= bounds.x + bounds.width &&
+                    y >= bounds.y && y <= bounds.y + bounds.height) {
+                    fleetClicked = true;
+                    break;
+                }
+            }
             
             if (event.button === 0) { // 左クリック
-                if (!event.shiftKey) {
-                    // Shiftキーが押されていない場合、全選択解除
+                if (!fleetClicked && !event.shiftKey) {
+                    // 艦隊がクリックされておらず、Shiftキーも押されていない場合のみ全選択解除
                     this.fleets.forEach(fleet => fleet.deselect());
                 }
                 
-                // ドラッグ選択開始
-                this.dragSelection.isDragging = true;
-                this.dragSelection.startX = x;
-                this.dragSelection.startY = y;
-                
-                // 選択ボックス作成
-                const selectionBox = new PIXI.Graphics();
-                selectionBox.rect(0, 0, 1, 1);
-                selectionBox.stroke({ width: 1, color: 0xffffff, alpha: 0.5 });
-                selectionBox.fill({ color: 0xffffff, alpha: 0.1 });
-                selectionBox.x = x;
-                selectionBox.y = y;
-                this.dragSelection.box = selectionBox;
-                this.app.stage.addChild(selectionBox);
-                
-            } else if (event.button === 2) { // 右クリック
-                const selectedFleets = this.fleets.filter(fleet => fleet.isSelected);
-                selectedFleets.forEach(fleet => {
-                    fleet.moveTo(x - 20, y - 20); // 中心調整
-                });
+                // ドラッグ選択開始（艦隊クリック時は除外）
+                if (!fleetClicked) {
+                    this.dragSelection.isDragging = true;
+                    this.dragSelection.startX = x;
+                    this.dragSelection.startY = y;
+                    
+                    // 選択ボックス作成
+                    const selectionBox = new PIXI.Graphics();
+                    selectionBox.rect(0, 0, 1, 1);
+                    selectionBox.stroke({ width: 1, color: 0xffffff, alpha: 0.5 });
+                    selectionBox.fill({ color: 0xffffff, alpha: 0.1 });
+                    selectionBox.x = x;
+                    selectionBox.y = y;
+                    this.dragSelection.box = selectionBox;
+                    this.app.stage.addChild(selectionBox);
+                }
             }
         });
         
         // ポインター移動
-        this.app.canvas.addEventListener('pointermove', (event) => {
+        this.app.stage.addEventListener('pointermove', (event) => {
             if (this.dragSelection.isDragging) {
-                const rect = this.app.canvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
+                const x = event.global.x;
+                const y = event.global.y;
                 
                 const startX = this.dragSelection.startX;
                 const startY = this.dragSelection.startY;
@@ -168,11 +197,10 @@ export class Game {
         });
         
         // ポインターアップ
-        this.app.canvas.addEventListener('pointerup', (event) => {
+        this.app.stage.addEventListener('pointerup', (event) => {
             if (this.dragSelection.isDragging && event.button === 0) {
-                const rect = this.app.canvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
+                const x = event.global.x;
+                const y = event.global.y;
                 
                 const startX = this.dragSelection.startX;
                 const startY = this.dragSelection.startY;

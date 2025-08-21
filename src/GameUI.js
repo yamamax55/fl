@@ -7,6 +7,16 @@ export class GameUI {
         this.container = new PIXI.Container();
         this.app.stage.addChild(this.container);
         
+        // ゲーム統計初期化
+        this.gameStats = {
+            destroyedAlliance: 0,
+            destroyedEmpire: 0,
+            gameStartTime: Date.now()
+        };
+        
+        // ゲーム状態フラグ
+        this.gameEnded = false;
+        
         // UI背景
         this.background = new PIXI.Graphics();
         this.background.rect(0, 0, 1280, 80);
@@ -26,6 +36,17 @@ export class GameUI {
         this.selectionText.y = 20;
         this.container.addChild(this.selectionText);
         
+        // 陣営艦隊数表示
+        this.allianceCountText = new PIXI.Text('同盟軍: 0', this.textStyle);
+        this.allianceCountText.x = 300;
+        this.allianceCountText.y = 20;
+        this.container.addChild(this.allianceCountText);
+        
+        this.empireCountText = new PIXI.Text('帝国軍: 0', this.textStyle);
+        this.empireCountText.x = 450;
+        this.empireCountText.y = 20;
+        this.container.addChild(this.empireCountText);
+        
         // 艦隊ステータス表示コンテナ
         this.fleetStatusContainer = new PIXI.Container();
         this.fleetStatusContainer.x = 20;
@@ -37,13 +58,27 @@ export class GameUI {
         const selectedFleets = window.gameState.fleets.filter(fleet => fleet.isSelected);
         this.selectionText.text = `選択艦隊: ${selectedFleets.length}`;
         
+        // 各陣営の残存艦隊数を更新
+        const allianceFleets = window.gameState.fleets.filter(f => f.faction === 'alliance' && f.currentHP > 0);
+        const empireFleets = window.gameState.fleets.filter(f => f.faction === 'empire' && f.currentHP > 0);
+        
+        this.allianceCountText.text = `同盟軍: ${allianceFleets.length}`;
+        this.empireCountText.text = `帝国軍: ${empireFleets.length}`;
+        
+        // 勝利条件チェック（ゲーム終了していない場合のみ）
+        if (!this.gameEnded) {
+            this.checkVictoryCondition();
+        }
+        
         // 既存の艦隊ステータス表示をクリア
         this.fleetStatusContainer.removeChildren();
         
         // 選択中の艦隊の詳細情報を表示
         selectedFleets.forEach((fleet, index) => {
+            const modeText = fleet.interactionMode === 'move' ? '移動' : 
+                           fleet.interactionMode === 'rotate' ? '回転' : '待機';
             const fleetInfo = new PIXI.Text(
-                `${fleet.name}: HP ${fleet.currentHP}/${fleet.maxHP}`,
+                `${fleet.name}: HP ${fleet.currentHP}/${fleet.maxHP} [${modeText}]`,
                 this.textStyle
             );
             fleetInfo.x = index * 200;
@@ -67,9 +102,11 @@ export class GameUI {
         const empireFleets = window.gameState.fleets.filter(f => f.faction === 'empire' && f.currentHP > 0);
         
         if (allianceFleets.length === 0) {
+            this.gameEnded = true;
             this.showGameOver('帝国軍の勝利！', 'defeat');
             return true;
         } else if (empireFleets.length === 0) {
+            this.gameEnded = true;
             this.showGameOver('同盟軍の勝利！', 'victory');
             return true;
         }

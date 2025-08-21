@@ -21,6 +21,16 @@ export class Fleet extends PIXI.Container {
         this.facing = 0; // 向き（ラジアン）
         this.shipColor = color;
         
+        // インタラクションモード管理
+        this.interactionMode = 'none'; // 'none', 'move', 'rotate'
+        this.lastClickTime = 0; // ダブルクリック判定用
+        this.doubleClickDelay = 300; // ダブルクリック判定時間（ミリ秒）
+        
+        // 回転アニメーション管理
+        this.targetFacing = this.facing; // 目標回転角度
+        this.rotationSpeed = 0.03; // 回転速度（ラジアン/フレーム） - ゆっくり回転
+        this.isRotating = false; // 回転中フラグ
+        
         // 艦隊本体（三角形）
         this.ship = new PIXI.Graphics();
         this.drawShip();
@@ -92,42 +102,89 @@ export class Fleet extends PIXI.Container {
     
     // クリック処理
     onPointerDown(event) {
-        // 右クリックは移動処理で後で実装
-        if (event.button === 0) { // 左クリック
-            this.select();
+        // 左クリックで選択とモード設定（同盟艦隊のみ）
+        if (event.button === 0 && this.faction === 'alliance') {
+            const currentTime = Date.now();
+            const timeSinceLastClick = currentTime - this.lastClickTime;
+            
+            if (timeSinceLastClick < this.doubleClickDelay && this.isSelected) {
+                // ダブルクリック: 回転モード
+                this.setRotationMode();
+            } else {
+                // シングルクリック: 選択して移動モード
+                this.select();
+                this.setMoveMode();
+            }
+            
+            this.lastClickTime = currentTime;
         }
         event.stopPropagation();
     }
     
     // 選択状態にする
     select() {
-        // 他の艦隊の選択を解除
-        window.gameState.fleets.forEach(fleet => {
-            if (fleet !== this) {
-                fleet.deselect();
+        // 他の艦隊の選択を解除（同盟艦隊のみを操作可能）
+        if (this.faction === 'alliance') {
+            window.gameState.fleets.forEach(fleet => {
+                if (fleet !== this && fleet.faction === 'alliance') {
+                    fleet.deselect();
+                }
+            });
+            
+            this.isSelected = true;
+            
+            // 選択エフェクト
+            if (window.gameState.effects) {
+                window.gameState.effects.createSelectionRing(this.x, this.y);
             }
-        });
-        
-        this.isSelected = true;
-        this.selectionBorder.visible = true;
-        
-        // 選択エフェクト
-        if (window.gameState.effects) {
-            window.gameState.effects.createSelectionRing(this.x, this.y);
+            
+            // 選択音再生
+            if (window.gameState.audio) {
+                window.gameState.audio.playSelect();
+            }
+            
+            console.log(`${this.name} が選択されました (位置: ${Math.round(this.x)}, ${Math.round(this.y)})`);
         }
-        
-        // 選択音再生
-        if (window.gameState.audio) {
-            window.gameState.audio.playSelect();
-        }
-        
-        console.log(`${this.name} が選択されました`);
     }
     
     // 選択状態を解除
     deselect() {
         this.isSelected = false;
         this.selectionBorder.visible = false;
+        this.interactionMode = 'none';
+        this.updateSelectionDisplay();
+    }
+    
+    // 移動モードに設定
+    setMoveMode() {
+        this.interactionMode = 'move';
+        this.updateSelectionDisplay();
+        console.log(`${this.name}: 移動モードに設定`);
+    }
+    
+    // 回転モードに設定  
+    setRotationMode() {
+        this.interactionMode = 'rotate';
+        this.updateSelectionDisplay();
+        console.log(`${this.name}: 回転モードに設定`);
+    }
+    
+    // 選択表示を更新（モードに応じて色を変更）
+    updateSelectionDisplay() {
+        if (!this.isSelected) return;
+        
+        this.selectionBorder.clear();
+        let borderColor = 0xffff00; // デフォルト黄色
+        
+        if (this.interactionMode === 'move') {
+            borderColor = 0x00ff00; // 緑色（移動モード）
+        } else if (this.interactionMode === 'rotate') {
+            borderColor = 0xff4444; // 赤色（回転モード）
+        }
+        
+        this.selectionBorder.circle(0, 0, 25);
+        this.selectionBorder.stroke({ width: 2, color: borderColor, alpha: 0.8 });
+        this.selectionBorder.visible = true;
     }
     
     // 目標地点に向かって移動
@@ -135,6 +192,49 @@ export class Fleet extends PIXI.Container {
         this.targetX = x;
         this.targetY = y;
         console.log(`${this.name} が (${x}, ${y}) に移動開始`);
+    }
+    
+    // 指定方向に回転（目標角度を設定）
+    rotateTo(targetX, targetY) {
+        const dx = targetX - this.x;
+        const dy = targetY - this.y;
+        const targetAngle = Math.atan2(dy, dx) + Math.PI / 2; // 上向きを0として調整
+        
+        this.targetFacing = targetAngle;
+        this.isRotating = true;
+        
+        // 回転方向が決まったので選択を解除
+        this.deselect();
+        
+        console.log(`${this.name} が角度 ${Math.round(targetAngle * 180 / Math.PI)}度 への回転開始（選択解除）`);
+    }
+    
+    // 滑らかな回転処理
+    updateRotation() {
+        if (!this.isRotating) return;
+        
+        // 現在の角度と目標角度の差を計算
+        let angleDiff = this.targetFacing - this.facing;
+        
+        // 角度を-π～πの範囲に正規化（最短回転方向を選択）
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        
+        // 目標角度に十分近い場合は回転完了
+        if (Math.abs(angleDiff) < 0.01) {
+            this.facing = this.targetFacing;
+            this.isRotating = false;
+            console.log(`${this.name} 回転完了: ${Math.round(this.facing * 180 / Math.PI)}度`);
+        } else {
+            // 回転方向を決定して少しずつ回転
+            const rotationDirection = Math.sign(angleDiff);
+            const rotationAmount = Math.min(Math.abs(angleDiff), this.rotationSpeed);
+            
+            this.facing += rotationDirection * rotationAmount;
+        }
+        
+        // 艦隊の描画を更新
+        this.drawShip();
     }
     
     // ダメージを受ける
@@ -248,6 +348,9 @@ export class Fleet extends PIXI.Container {
         // HPが0以下の場合は何もしない
         if (this.currentHP <= 0) return;
         
+        // 回転アニメーション処理
+        this.updateRotation();
+        
         // 画面外の場合は処理を軽量化
         const onScreen = this.isOnScreen();
         
@@ -259,11 +362,18 @@ export class Fleet extends PIXI.Container {
         if (distance >= this.moveSpeed) {
             const directionX = dx / distance;
             const directionY = dy / distance;
+            const oldX = this.x;
+            const oldY = this.y;
             this.x += directionX * this.moveSpeed;
             this.y += directionY * this.moveSpeed;
             
-            // 画面内の場合のみ向きを詳細更新
-            if (onScreen) {
+            // デバッグログ（移動中のみ）
+            if (distance > 10) { // 10ピクセル以上離れている時のみ表示
+                console.log(`${this.name} 移動中: (${Math.round(oldX)},${Math.round(oldY)}) -> (${Math.round(this.x)},${Math.round(this.y)}) 目標:(${Math.round(this.targetX)},${Math.round(this.targetY)})`);
+            }
+            
+            // 画面内で回転モードでない場合のみ向きを詳細更新
+            if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating) {
                 this.updateFacing(this.targetX, this.targetY);
             }
         } else {
@@ -274,8 +384,8 @@ export class Fleet extends PIXI.Container {
         // 戦闘処理
         const target = this.findTarget();
         if (target) {
-            // 攻撃対象に向きを変更
-            if (onScreen) {
+            // 攻撃対象に向きを変更（回転モード時を除く）
+            if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating) {
                 this.updateFacing(target.x, target.y);
             }
             this.attack(target);
