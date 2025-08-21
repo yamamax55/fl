@@ -31,6 +31,9 @@ export class Fleet extends PIXI.Container {
         this.rotationSpeed = 0.03; // 回転速度（ラジアン/フレーム） - ゆっくり回転
         this.isRotating = false; // 回転中フラグ
         
+        // 移動状態管理
+        this.isWaitingToMove = false; // 回転完了待ちで移動待機中フラグ
+        
         // 艦隊本体（三角形）
         this.ship = new PIXI.Graphics();
         this.drawShip();
@@ -54,6 +57,18 @@ export class Fleet extends PIXI.Container {
         this.selectionBorder.visible = false;
         this.addChild(this.selectionBorder);
         
+        // 射程表示枠（回転モード時のみ表示、前方楕円形）
+        this.rangeEllipse = new PIXI.Graphics();
+        this.drawRangeEllipse();
+        this.rangeEllipse.visible = false;
+        this.addChild(this.rangeEllipse);
+        
+        // 移動予定地点プレビュー（移動モード時のみ表示）
+        this.ghostFleet = new PIXI.Graphics();
+        this.drawGhostFleet();
+        this.ghostFleet.visible = false;
+        // ゴーストフリートはゲームステージに直接追加
+        
         // インタラクティブ設定
         this.eventMode = 'static';
         this.cursor = 'pointer';
@@ -64,6 +79,13 @@ export class Fleet extends PIXI.Container {
         
         // イベントリスナー
         this.on('pointerdown', this.onPointerDown.bind(this));
+    }
+    
+    // ゲームステージにゴーストフリートを追加
+    initializeGhostFleet(gameStage) {
+        if (gameStage && this.ghostFleet) {
+            gameStage.addChild(this.ghostFleet);
+        }
     }
     
     // 艦隊の三角形描画
@@ -83,6 +105,60 @@ export class Fleet extends PIXI.Container {
         
         // 向きに応じて回転
         this.ship.rotation = this.facing;
+    }
+    
+    // 前方射程楕円を描画
+    drawRangeEllipse() {
+        this.rangeEllipse.clear();
+        
+        // 前方方向の楕円形射程（縦長で前方に延びる形状）
+        const ellipseWidth = this.range * 0.6; // 横幅は射程の60%
+        const ellipseHeight = this.range * 1.2; // 縦は射程の120%
+        
+        // 楕円を描画（中心より前方寄りに配置）
+        this.rangeEllipse.ellipse(0, -this.range * 0.2, ellipseWidth, ellipseHeight);
+        this.rangeEllipse.stroke({ width: 1, color: 0xff4444, alpha: 0.3 });
+        this.rangeEllipse.fill({ color: 0xff4444, alpha: 0.1 });
+        
+        // 艦隊の向きに応じて回転
+        this.rangeEllipse.rotation = this.facing;
+    }
+    
+    // 移動予定地点のゴースト艦隊を描画
+    drawGhostFleet() {
+        this.ghostFleet.clear();
+        
+        // 薄い三角形の座標（実際の艦隊と同じ形状）
+        const points = [
+            0, -15,    // 先端（上）
+            -12, 10,   // 左下
+            12, 10     // 右下
+        ];
+        
+        // 半透明で薄く描画
+        this.ghostFleet.poly(points);
+        this.ghostFleet.fill({ color: this.shipColor, alpha: 0.3 });
+        this.ghostFleet.stroke({ width: 1, color: this.shipColor, alpha: 0.5 });
+        
+        // 移動先の位置に配置
+        this.updateGhostPosition();
+    }
+    
+    // ゴースト艦隊の位置と向きを更新
+    updateGhostPosition() {
+        if (!this.ghostFleet) return;
+        
+        // 移動予定地点に配置（絶対座標で設定）
+        this.ghostFleet.x = this.targetX;
+        this.ghostFleet.y = this.targetY;
+        
+        // 移動方向に向きを設定
+        if (this.targetX !== this.x || this.targetY !== this.y) {
+            const dx = this.targetX - this.x;
+            const dy = this.targetY - this.y;
+            const targetFacing = Math.atan2(dy, dx) + Math.PI / 2;
+            this.ghostFleet.rotation = targetFacing;
+        }
     }
     
     // HPバーを更新
@@ -127,7 +203,17 @@ export class Fleet extends PIXI.Container {
         if (this.faction === 'alliance') {
             window.gameState.fleets.forEach(fleet => {
                 if (fleet !== this && fleet.faction === 'alliance') {
+                    // 他の艦隊のゴーストフリートの状態を保存
+                    const wasGhostVisible = fleet.ghostFleet && fleet.ghostFleet.visible && 
+                                          (fleet.targetX !== fleet.x || fleet.targetY !== fleet.y);
+                    
                     fleet.deselect();
+                    
+                    // 移動中の艦隊のゴーストフリートを復元
+                    if (wasGhostVisible) {
+                        fleet.drawGhostFleet();
+                        fleet.ghostFleet.visible = true;
+                    }
                 }
             });
             
@@ -151,6 +237,11 @@ export class Fleet extends PIXI.Container {
     deselect() {
         this.isSelected = false;
         this.selectionBorder.visible = false;
+        this.rangeEllipse.visible = false; // 射程表示も隠す
+        // ゴースト艦隊は移動中の場合は表示し続ける
+        if (this.targetX === this.x && this.targetY === this.y) {
+            this.ghostFleet.visible = false; // 移動予定がない場合のみ隠す
+        }
         this.interactionMode = 'none';
         this.updateSelectionDisplay();
     }
@@ -171,15 +262,41 @@ export class Fleet extends PIXI.Container {
     
     // 選択表示を更新（モードに応じて色を変更）
     updateSelectionDisplay() {
-        if (!this.isSelected) return;
+        if (!this.isSelected) {
+            // 選択されていない場合はすべての表示を隠す
+            this.rangeEllipse.visible = false;
+            this.ghostFleet.visible = false;
+            return;
+        }
         
         this.selectionBorder.clear();
         let borderColor = 0xffff00; // デフォルト黄色
         
         if (this.interactionMode === 'move') {
             borderColor = 0x00ff00; // 緑色（移動モード）
+            this.rangeEllipse.visible = false; // 移動モードでは射程を隠す
+            // 移動モードでは移動予定地点にゴースト艦隊を表示
+            if (this.targetX !== this.x || this.targetY !== this.y) {
+                this.drawGhostFleet();
+                this.ghostFleet.visible = true;
+            } else {
+                this.ghostFleet.visible = false;
+            }
         } else if (this.interactionMode === 'rotate') {
             borderColor = 0xff4444; // 赤色（回転モード）
+            // 回転モードでは前方楕円射程を表示
+            this.drawRangeEllipse();
+            this.rangeEllipse.visible = true;
+            this.ghostFleet.visible = false; // 回転モードではゴースト艦隊を隠す
+        } else {
+            this.rangeEllipse.visible = false; // 待機モードでは射程を隠す
+            // 待機モードでも移動中の場合はゴースト艦隊を表示し続ける
+            if (this.targetX !== this.x || this.targetY !== this.y) {
+                this.drawGhostFleet();
+                this.ghostFleet.visible = true;
+            } else {
+                this.ghostFleet.visible = false;
+            }
         }
         
         this.selectionBorder.circle(0, 0, 25);
@@ -191,7 +308,39 @@ export class Fleet extends PIXI.Container {
     moveTo(x, y) {
         this.targetX = x;
         this.targetY = y;
-        console.log(`${this.name} が (${x}, ${y}) に移動開始`);
+        
+        // 移動方向を計算
+        const dx = x - this.x;
+        const dy = y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // 距離が十分ある場合のみ回転してから移動
+        if (distance > 10) {
+            const moveDirection = Math.atan2(dy, dx) + Math.PI / 2; // 上向きを0として調整
+            
+            // 移動方向に回転を設定し、移動待機状態にする
+            this.targetFacing = moveDirection;
+            this.isRotating = true;
+            this.isWaitingToMove = true;
+            
+            console.log(`${this.name} が (${x}, ${y}) への移動準備：回転完了後に移動開始`);
+        } else {
+            // 距離が短い場合は直接移動
+            this.isWaitingToMove = false;
+            console.log(`${this.name} が (${x}, ${y}) に即座に移動開始`);
+        }
+        
+        // ゴースト艦隊の位置を更新
+        this.updateGhostPosition();
+        
+        // 移動先が確定したので選択を解除
+        this.deselect();
+        
+        // 選択解除後もゴースト艦隊を表示
+        if (this.targetX !== this.x || this.targetY !== this.y) {
+            this.drawGhostFleet();
+            this.ghostFleet.visible = true;
+        }
     }
     
     // 指定方向に回転（目標角度を設定）
@@ -225,6 +374,12 @@ export class Fleet extends PIXI.Container {
             this.facing = this.targetFacing;
             this.isRotating = false;
             console.log(`${this.name} 回転完了: ${Math.round(this.facing * 180 / Math.PI)}度`);
+            
+            // 移動待機中だった場合、移動開始
+            if (this.isWaitingToMove) {
+                this.isWaitingToMove = false;
+                console.log(`${this.name} 回転完了により移動開始`);
+            }
         } else {
             // 回転方向を決定して少しずつ回転
             const rotationDirection = Math.sign(angleDiff);
@@ -260,7 +415,7 @@ export class Fleet extends PIXI.Container {
         const enemies = window.gameState.fleets.filter(fleet => 
             fleet.faction !== this.faction && 
             fleet.currentHP > 0 &&
-            this.getDistanceTo(fleet) <= this.range
+            this.isInAttackRange(fleet)
         );
         
         // 最も近い敵を選択
@@ -277,6 +432,30 @@ export class Fleet extends PIXI.Container {
         const dx = this.x - otherFleet.x;
         const dy = this.y - otherFleet.y;
         return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    // 前方楕円形攻撃範囲内にいるかチェック
+    isInAttackRange(target) {
+        const dx = target.x - this.x;
+        const dy = target.y - this.y;
+        
+        // 攻撃者の向きに応じて座標変換
+        const cos = Math.cos(-this.facing);
+        const sin = Math.sin(-this.facing);
+        const rotatedX = dx * cos - dy * sin;
+        const rotatedY = dx * sin + dy * cos;
+        
+        // 楕円の半径（描画と同じ比率）
+        const ellipseWidth = this.range * 0.6; // 横幅60%
+        const ellipseHeight = this.range * 1.2; // 縦120%
+        const offsetY = -this.range * 0.2; // 前方オフセット
+        
+        // 楕円判定（中心からのオフセットを考慮）
+        const adjustedY = rotatedY - offsetY;
+        const ellipseTest = (rotatedX * rotatedX) / (ellipseWidth * ellipseWidth) + 
+                           (adjustedY * adjustedY) / (ellipseHeight * ellipseHeight);
+        
+        return ellipseTest <= 1.0;
     }
     
     // 攻撃実行
@@ -323,15 +502,29 @@ export class Fleet extends PIXI.Container {
         }
     }
     
-    // 向きを更新
+    // 向きを滑らかに更新（戦闘時の応戦など）
     updateFacing(targetX, targetY) {
         const dx = targetX - this.x;
         const dy = targetY - this.y;
         const newFacing = Math.atan2(dy, dx) + Math.PI / 2; // 上向きを0として調整
         
-        // 向きが変わった場合のみ再描画
-        if (Math.abs(this.facing - newFacing) > 0.1) {
+        // 現在の角度と目標角度の差を計算
+        let angleDiff = newFacing - this.facing;
+        
+        // 角度を-π～πの範囲に正規化（最短回転方向を選択）
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        
+        // 目標角度に十分近い場合は完了
+        if (Math.abs(angleDiff) < 0.05) {
             this.facing = newFacing;
+            this.drawShip();
+        } else if (Math.abs(angleDiff) > 0.1) {
+            // 滑らかな回転（戦闘時の自動向き調整）
+            const rotationDirection = Math.sign(angleDiff);
+            const rotationAmount = Math.min(Math.abs(angleDiff), this.rotationSpeed * 0.7); // 戦闘時は少し速め
+            
+            this.facing += rotationDirection * rotationAmount;
             this.drawShip();
         }
     }
@@ -354,18 +547,21 @@ export class Fleet extends PIXI.Container {
         // 画面外の場合は処理を軽量化
         const onScreen = this.isOnScreen();
         
-        // 移動処理
+        // 移動処理（回転待機中でない場合のみ）
         const dx = this.targetX - this.x;
         const dy = this.targetY - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance >= this.moveSpeed) {
+        if (!this.isWaitingToMove && distance >= this.moveSpeed) {
             const directionX = dx / distance;
             const directionY = dy / distance;
             const oldX = this.x;
             const oldY = this.y;
             this.x += directionX * this.moveSpeed;
             this.y += directionY * this.moveSpeed;
+            
+            // ゴースト艦隊の位置を移動に合わせて更新
+            this.updateGhostPosition();
             
             // デバッグログ（移動中のみ）
             if (distance > 10) { // 10ピクセル以上離れている時のみ表示
@@ -376,9 +572,14 @@ export class Fleet extends PIXI.Container {
             if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating) {
                 this.updateFacing(this.targetX, this.targetY);
             }
-        } else {
+        } else if (!this.isWaitingToMove) {
             this.x = this.targetX;
             this.y = this.targetY;
+            
+            // 目標に到達したらゴースト艦隊を隠す
+            if (this.ghostFleet && this.ghostFleet.visible) {
+                this.ghostFleet.visible = false;
+            }
         }
         
         // 戦闘処理

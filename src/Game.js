@@ -86,6 +86,9 @@ export class Game {
             );
             this.fleets.push(fleet);
             this.app.stage.addChild(fleet);
+            
+            // ゴーストフリートをステージに追加
+            fleet.initializeGhostFleet(this.app.stage);
         }
         
         // 銀河帝国艦隊（赤色）
@@ -100,6 +103,9 @@ export class Game {
             );
             this.fleets.push(fleet);
             this.app.stage.addChild(fleet);
+            
+            // ゴーストフリートをステージに追加
+            fleet.initializeGhostFleet(this.app.stage);
         }
     }
     
