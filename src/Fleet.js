@@ -34,6 +34,11 @@ export class Fleet extends PIXI.Container {
         // 移動状態管理
         this.isWaitingToMove = false; // 回転完了待ちで移動待機中フラグ
         
+        // ZOC（Zone of Control）システム
+        this.zocRange = 200; // ZOC範囲（ピクセル）
+        this.zocTarget = null; // ZOC内の追跡対象
+        this.isZOCRotating = false; // ZOC自動回転中フラグ
+        
         // 艦隊本体（三角形）
         this.ship = new PIXI.Graphics();
         this.drawShip();
@@ -62,6 +67,12 @@ export class Fleet extends PIXI.Container {
         this.drawRangeEllipse();
         this.rangeEllipse.visible = false;
         this.addChild(this.rangeEllipse);
+        
+        // ZOC範囲表示（回転モード時のみ表示、円形）
+        this.zocCircle = new PIXI.Graphics();
+        this.drawZOCRange();
+        this.zocCircle.visible = false;
+        this.addChild(this.zocCircle);
         
         // 移動予定地点プレビュー（移動モード時のみ表示）
         this.ghostFleet = new PIXI.Graphics();
@@ -122,6 +133,16 @@ export class Fleet extends PIXI.Container {
         
         // 艦隊の向きに応じて回転
         this.rangeEllipse.rotation = this.facing;
+    }
+    
+    // ZOC範囲を描画
+    drawZOCRange() {
+        this.zocCircle.clear();
+        
+        // 円形のZOC範囲
+        this.zocCircle.circle(0, 0, this.zocRange);
+        this.zocCircle.stroke({ width: 2, color: 0x9900ff, alpha: 0.4 });
+        this.zocCircle.fill({ color: 0x9900ff, alpha: 0.08 });
     }
     
     // 移動予定地点のゴースト艦隊を描画
@@ -238,6 +259,7 @@ export class Fleet extends PIXI.Container {
         this.isSelected = false;
         this.selectionBorder.visible = false;
         this.rangeEllipse.visible = false; // 射程表示も隠す
+        this.zocCircle.visible = false; // ZOC表示も隠す
         // ゴースト艦隊は移動中の場合は表示し続ける
         if (this.targetX === this.x && this.targetY === this.y) {
             this.ghostFleet.visible = false; // 移動予定がない場合のみ隠す
@@ -265,6 +287,7 @@ export class Fleet extends PIXI.Container {
         if (!this.isSelected) {
             // 選択されていない場合はすべての表示を隠す
             this.rangeEllipse.visible = false;
+            this.zocCircle.visible = false;
             this.ghostFleet.visible = false;
             return;
         }
@@ -275,6 +298,7 @@ export class Fleet extends PIXI.Container {
         if (this.interactionMode === 'move') {
             borderColor = 0x00ff00; // 緑色（移動モード）
             this.rangeEllipse.visible = false; // 移動モードでは射程を隠す
+            this.zocCircle.visible = false; // 移動モードではZOCを隠す
             // 移動モードでは移動予定地点にゴースト艦隊を表示
             if (this.targetX !== this.x || this.targetY !== this.y) {
                 this.drawGhostFleet();
@@ -284,12 +308,15 @@ export class Fleet extends PIXI.Container {
             }
         } else if (this.interactionMode === 'rotate') {
             borderColor = 0xff4444; // 赤色（回転モード）
-            // 回転モードでは前方楕円射程を表示
+            // 回転モードでは前方楕円射程とZOCを同時表示
             this.drawRangeEllipse();
             this.rangeEllipse.visible = true;
+            this.drawZOCRange();
+            this.zocCircle.visible = true;
             this.ghostFleet.visible = false; // 回転モードではゴースト艦隊を隠す
         } else {
             this.rangeEllipse.visible = false; // 待機モードでは射程を隠す
+            this.zocCircle.visible = false; // 待機モードではZOCを隠す
             // 待機モードでも移動中の場合はゴースト艦隊を表示し続ける
             if (this.targetX !== this.x || this.targetY !== this.y) {
                 this.drawGhostFleet();
@@ -458,6 +485,67 @@ export class Fleet extends PIXI.Container {
         return ellipseTest <= 1.0;
     }
     
+    // ZOC内の最も近い敵を検索
+    findNearestEnemyInZOC() {
+        // 手動回転中やゲーム終了時は無効
+        if (this.isRotating || this.currentHP <= 0) {
+            return null;
+        }
+        
+        const enemies = window.gameState.fleets.filter(fleet => 
+            fleet.faction !== this.faction && 
+            fleet.currentHP > 0 &&
+            this.getDistanceTo(fleet) <= this.zocRange
+        );
+        
+        // 最も近い敵を選択
+        if (enemies.length > 0) {
+            return enemies.reduce((closest, enemy) => 
+                this.getDistanceTo(enemy) < this.getDistanceTo(closest) ? enemy : closest
+            );
+        }
+        return null;
+    }
+    
+    // ZOC自動回転処理
+    updateZOCRotation() {
+        // 手動回転中は無効
+        if (this.isRotating) {
+            this.isZOCRotating = false;
+            this.zocTarget = null;
+            return;
+        }
+        
+        const nearestEnemy = this.findNearestEnemyInZOC();
+        
+        if (nearestEnemy) {
+            // ZOC内に敵がいる場合
+            this.zocTarget = nearestEnemy;
+            this.isZOCRotating = true;
+            
+            // 敵の方向を計算
+            const dx = nearestEnemy.x - this.x;
+            const dy = nearestEnemy.y - this.y;
+            const targetFacing = Math.atan2(dy, dx) + Math.PI / 2;
+            
+            // 滑らかに回転
+            let angleDiff = targetFacing - this.facing;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            
+            if (Math.abs(angleDiff) > 0.05) {
+                const rotationDirection = Math.sign(angleDiff);
+                const rotationAmount = Math.min(Math.abs(angleDiff), this.rotationSpeed * 0.8);
+                this.facing += rotationDirection * rotationAmount;
+                this.drawShip();
+            }
+        } else {
+            // ZOC内に敵がいない場合
+            this.isZOCRotating = false;
+            this.zocTarget = null;
+        }
+    }
+    
     // 攻撃実行
     attack(target) {
         const currentTime = Date.now();
@@ -582,11 +670,16 @@ export class Fleet extends PIXI.Container {
             }
         }
         
+        // ZOC処理（画面内の艦隊のみ）
+        if (onScreen) {
+            this.updateZOCRotation();
+        }
+        
         // 戦闘処理
         const target = this.findTarget();
         if (target) {
-            // 攻撃対象に向きを変更（回転モード時を除く）
-            if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating) {
+            // 攻撃対象に向きを変更（手動回転中・ZOC回転中を除く）
+            if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating && !this.isZOCRotating) {
                 this.updateFacing(target.x, target.y);
             }
             this.attack(target);
