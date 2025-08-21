@@ -96,7 +96,28 @@ export class Fleet extends PIXI.Container {
         this.addChild(this.zocCircle);
         
         // 移動予定地点プレビュー（移動モード時のみ表示）
-        this.ghostFleet = new PIXI.Graphics();
+        this.ghostFleet = new PIXI.Container();
+        this.ghostFleetGraphics = new PIXI.Graphics();
+        this.ghostFleet.addChild(this.ghostFleetGraphics);
+        
+        // ゴースト艦隊番号テキスト
+        this.ghostFleetNumberText = new PIXI.Text({
+            text: this.fleetNumber.toString(),
+            style: {
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fontWeight: 'bold',
+                fill: 0xffffff,
+                stroke: { color: 0x000000, width: 1, alpha: 0.4 },
+                align: 'center'
+            }
+        });
+        this.ghostFleetNumberText.anchor.set(0.5, 0.5);
+        this.ghostFleetNumberText.x = 0;
+        this.ghostFleetNumberText.y = 0;
+        this.ghostFleetNumberText.alpha = 0.5; // 半透明
+        this.ghostFleet.addChild(this.ghostFleetNumberText);
+        
         this.drawGhostFleet();
         this.ghostFleet.visible = false;
         // ゴーストフリートはゲームステージに直接追加
@@ -168,7 +189,7 @@ export class Fleet extends PIXI.Container {
     
     // 移動予定地点のゴースト艦隊を描画
     drawGhostFleet() {
-        this.ghostFleet.clear();
+        this.ghostFleetGraphics.clear();
         
         // 薄い三角形の座標（実際の艦隊と同じ形状）
         const points = [
@@ -178,9 +199,9 @@ export class Fleet extends PIXI.Container {
         ];
         
         // 半透明で薄く描画
-        this.ghostFleet.poly(points);
-        this.ghostFleet.fill({ color: this.shipColor, alpha: 0.3 });
-        this.ghostFleet.stroke({ width: 1, color: this.shipColor, alpha: 0.5 });
+        this.ghostFleetGraphics.poly(points);
+        this.ghostFleetGraphics.fill({ color: this.shipColor, alpha: 0.3 });
+        this.ghostFleetGraphics.stroke({ width: 1, color: this.shipColor, alpha: 0.5 });
         
         // 移動先の位置に配置
         this.updateGhostPosition();
@@ -199,7 +220,7 @@ export class Fleet extends PIXI.Container {
             const dx = this.targetX - this.x;
             const dy = this.targetY - this.y;
             const targetFacing = Math.atan2(dy, dx) + Math.PI / 2;
-            this.ghostFleet.rotation = targetFacing;
+            this.ghostFleet.rotation = targetFacing; // コンテナ全体を回転（番号も一緒に回転）
         }
     }
     
