@@ -19,7 +19,7 @@ export class Fleet extends PIXI.Container {
         this.range = 150; // 射程距離
         this.lastAttackTime = 0; // 最後の攻撃時間
         this.attackCooldown = 1000; // 攻撃間隔（ミリ秒）
-        this.facing = 0; // 向き（ラジアン）
+        this.facing = Math.PI / 2; // 向き（ラジアン）右向きを初期設定
         this.shipColor = color;
         
         // インタラクションモード管理
@@ -527,6 +527,11 @@ export class Fleet extends PIXI.Container {
         return ellipseTest <= 1.0;
     }
     
+    // ZOC範囲内にいるかチェック
+    isInZOCRange(otherFleet) {
+        return this.getDistanceTo(otherFleet) <= this.zocRange;
+    }
+    
     // ZOC内の最も近い敵を検索
     findNearestEnemyInZOC() {
         // 手動回転中やゲーム終了時は無効
@@ -537,7 +542,7 @@ export class Fleet extends PIXI.Container {
         const enemies = window.gameState.fleets.filter(fleet => 
             fleet.faction !== this.faction && 
             fleet.currentHP > 0 &&
-            this.getDistanceTo(fleet) <= this.zocRange
+            this.isInZOCRange(fleet)
         );
         
         // 最も近い敵を選択

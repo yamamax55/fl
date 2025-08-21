@@ -238,9 +238,32 @@ export class Game {
         });
     }
     
+    // 戦場の霊（Fog of War）システム - ZOCベースの視界管理
+    updateVisibility() {
+        // 帝国艦隊の視認性を判定
+        const empireFleets = this.fleets.filter(fleet => fleet.faction === 'empire' && fleet.currentHP > 0);
+        const allianceFleets = this.fleets.filter(fleet => fleet.faction === 'alliance' && fleet.currentHP > 0);
+        
+        empireFleets.forEach(empireFleet => {
+            // いずれかの同盟艦隊のZOC範囲内にいるかチェック
+            const isVisible = allianceFleets.some(allianceFleet => 
+                allianceFleet.isInZOCRange(empireFleet)
+            );
+            
+            // 艦隊本体、HPバー、番号を連動表示/非表示
+            empireFleet.visible = isVisible;
+        });
+        
+        // 同盟艦隊は常に表示
+        allianceFleets.forEach(allianceFleet => {
+            allianceFleet.visible = true;
+        });
+    }
+    
     startGameLoop() {
         this.app.ticker.add(() => {
             this.fleets.forEach(fleet => fleet.update());
+            this.updateVisibility(); // 毎フレーム視界更新
             this.ui.update();
             this.effects.update();
         });
