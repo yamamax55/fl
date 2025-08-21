@@ -643,7 +643,6 @@ export class Fleet extends PIXI.Container {
         }
         
         // 戦闘状態を両艦隊に設定（戦闘時視界特例のため）
-        const currentTime = Date.now();
         this.isInCombat = true;
         this.lastCombatTime = currentTime;
         target.isInCombat = true;
