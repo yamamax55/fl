@@ -535,8 +535,10 @@ export class GameUI {
                 `番号: ${fleet.fleetNumber}`,
                 `HP: ${fleet.currentHP} / ${fleet.maxHP}`,
                 `攻撃力: ${fleet.attackPower}`,
+                `防御力: ${fleet.defensePower}`,
                 `射程: ${fleet.range}`,
-                `速度: ${fleet.moveSpeed}`,
+                `移動速度: ${fleet.moveSpeed.toFixed(2)}`,
+                `回転速度: ${(fleet.rotationSpeed * 1000).toFixed(1)}/s`,
                 ``,
                 `状態: ${this.getFleetStatus(fleet)}`,
                 `モード: ${this.getFleetMode(fleet)}`,
@@ -584,12 +586,14 @@ export class GameUI {
             const totalHP = selectedFleets.reduce((sum, f) => sum + f.currentHP, 0);
             const maxHP = selectedFleets.reduce((sum, f) => sum + f.maxHP, 0);
             const totalAttack = selectedFleets.reduce((sum, f) => sum + f.attackPower, 0);
+            const totalDefense = selectedFleets.reduce((sum, f) => sum + f.defensePower, 0);
             
             const summary = [
                 `選択艦隊数: ${selectedFleets.length}`,
                 ``,
                 `合計HP: ${totalHP} / ${maxHP}`,
                 `合計攻撃力: ${totalAttack}`,
+                `合計防御力: ${totalDefense}`,
                 ``,
                 `艦隊リスト:`
             ];

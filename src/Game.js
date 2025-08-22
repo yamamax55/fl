@@ -139,6 +139,7 @@ export class Game {
             if (fleetId) {
                 const commanderInfo = await this.dbService.getFleetCommanderInfo(fleetId);
                 fleet.commanderInfo = commanderInfo;
+                fleet.updateFleetPerformance(); // 提督能力値に基づいて性能を更新
                 console.log(`${fleet.name}の司令官情報をロードしました:`, commanderInfo);
             } else {
                 console.warn(`${fleet.name}のfleet IDが見つかりません`);

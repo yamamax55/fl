@@ -12,10 +12,14 @@ export class Fleet extends PIXI.Container {
         this.targetX = x;
         this.targetY = y;
         this.isSelected = false;
-        this.moveSpeed = 2; // 移動速度
+        this.baseMoveSpeed = 2; // 基本移動速度
+        this.moveSpeed = 2; // 実際の移動速度（提督能力で調整）
         this.maxHP = 10000; // 最大HP
         this.currentHP = 10000; // 現在のHP
-        this.attackPower = 1000; // 攻撃力
+        this.baseAttackPower = 1000; // 基本攻撃力
+        this.attackPower = 1000; // 実際の攻撃力（提督能力で調整）
+        this.baseDefensePower = 100; // 基本防御力
+        this.defensePower = 100; // 実際の防御力（提督能力で調整）
         this.range = 150; // 射程距離
         this.lastAttackTime = 0; // 最後の攻撃時間
         this.attackCooldown = 1000; // 攻撃間隔（ミリ秒）
@@ -30,7 +34,8 @@ export class Fleet extends PIXI.Container {
         
         // 回転アニメーション管理
         this.targetFacing = this.facing; // 目標回転角度
-        this.rotationSpeed = 0.03; // 回転速度（ラジアン/フレーム） - ゆっくり回転
+        this.baseRotationSpeed = 0.03; // 基本回転速度（ラジアン/フレーム）
+        this.rotationSpeed = 0.03; // 実際の回転速度（提督能力で調整）
         this.isRotating = false; // 回転中フラグ
         
         // 移動状態管理
@@ -139,6 +144,9 @@ export class Fleet extends PIXI.Container {
         this.x = x;
         this.y = y;
         
+        // 司令官情報（Game.jsで設定される）
+        this.commanderInfo = null;
+        
         // イベントリスナー
         this.on('pointerdown', this.onPointerDown.bind(this));
     }
@@ -167,6 +175,106 @@ export class Fleet extends PIXI.Container {
         
         // 向きに応じて回転（shipコンテナ全体を回転）
         this.ship.rotation = this.facing;
+    }
+    
+    // 提督の能力値に基づいて艦隊性能を更新
+    updateFleetPerformance() {
+        if (!this.commanderInfo) {
+            // 司令官未配属時はデフォルト値を使用
+            this.moveSpeed = this.baseMoveSpeed;
+            this.rotationSpeed = this.baseRotationSpeed;
+            this.attackPower = this.baseAttackPower;
+            this.defensePower = this.baseDefensePower;
+            return;
+        }
+        
+        // 各能力値を取得（司令官、副司令官、参謀の順で優先）
+        let mobilityValue = null;
+        let attackValue = null;
+        let defenseValue = null;
+        
+        if (this.commanderInfo.commander_last_name) {
+            mobilityValue = this.getCommanderAbility('commander', 'mobility');
+            attackValue = this.getCommanderAbility('commander', 'attack');
+            defenseValue = this.getCommanderAbility('commander', 'defense');
+        } else if (this.commanderInfo.vice_last_name) {
+            mobilityValue = this.getCommanderAbility('vice', 'mobility');
+            attackValue = this.getCommanderAbility('vice', 'attack');
+            defenseValue = this.getCommanderAbility('vice', 'defense');
+        } else if (this.commanderInfo.staff_last_name) {
+            mobilityValue = this.getCommanderAbility('staff', 'mobility');
+            attackValue = this.getCommanderAbility('staff', 'attack');
+            defenseValue = this.getCommanderAbility('staff', 'defense');
+        }
+        
+        // 機動能力の適用
+        if (mobilityValue !== null) {
+            // 移動速度計算（機動能力 60-120 → 速度倍率 0.8-2.0）
+            const mobilityRatio = Math.max(0.8, Math.min(2.0, (mobilityValue - 60) / 30 + 0.8));
+            this.moveSpeed = this.baseMoveSpeed * mobilityRatio;
+            
+            // 回転速度計算（機動能力 60-120 → 回転倍率 0.7-1.8）
+            const rotationRatio = Math.max(0.7, Math.min(1.8, (mobilityValue - 60) / 40 + 0.7));
+            this.rotationSpeed = this.baseRotationSpeed * rotationRatio;
+        } else {
+            this.moveSpeed = this.baseMoveSpeed;
+            this.rotationSpeed = this.baseRotationSpeed;
+        }
+        
+        // 攻撃力の適用
+        if (attackValue !== null) {
+            // 攻撃力計算（攻撃能力 60-120 → 攻撃倍率 0.7-1.8）
+            const attackRatio = Math.max(0.7, Math.min(1.8, (attackValue - 60) / 30 + 0.7));
+            this.attackPower = Math.round(this.baseAttackPower * attackRatio);
+        } else {
+            this.attackPower = this.baseAttackPower;
+        }
+        
+        // 防御力の適用
+        if (defenseValue !== null) {
+            // 防御力計算（防御能力 60-120 → 防御倍率 0.8-2.0）
+            const defenseRatio = Math.max(0.8, Math.min(2.0, (defenseValue - 60) / 30 + 0.8));
+            this.defensePower = Math.round(this.baseDefensePower * defenseRatio);
+        } else {
+            this.defensePower = this.baseDefensePower;
+        }
+        
+        console.log(`${this.name}: 機動${mobilityValue}, 攻撃${attackValue}, 防御${defenseValue} → 移動${this.moveSpeed.toFixed(2)}, 攻撃${this.attackPower}, 防御${this.defensePower}`);
+    }
+    
+    // 司令官の能力値を取得（静的データベース）
+    getCommanderAbility(position, abilityType) {
+        if (!this.commanderInfo) return null;
+        
+        let lastName, firstName;
+        if (position === 'commander') {
+            lastName = this.commanderInfo.commander_last_name;
+            firstName = this.commanderInfo.commander_first_name;
+        } else if (position === 'vice') {
+            lastName = this.commanderInfo.vice_last_name;
+            firstName = this.commanderInfo.vice_first_name;
+        } else if (position === 'staff') {
+            lastName = this.commanderInfo.staff_last_name;
+            firstName = this.commanderInfo.staff_first_name;
+        }
+        
+        if (!lastName || !firstName) return null;
+        
+        // 静的な能力値データ（DatabaseServiceと連携）
+        const abilityData = {
+            'ヤンウェンリー': { mobility: 85, attack: 105, defense: 110 },
+            'ラインハルトフォン': { mobility: 95, attack: 115, defense: 100 },
+            'ビッテンフェルトフリッツ': { mobility: 110, attack: 120, defense: 85 },
+            'ミッターマイヤーヴォルフガング': { mobility: 115, attack: 105, defense: 95 },
+            'ロイエンタールオスカー': { mobility: 100, attack: 110, defense: 105 }
+        };
+        
+        const key = lastName + firstName;
+        const commander = abilityData[key];
+        
+        if (!commander) return 75; // デフォルト値
+        
+        return commander[abilityType] || 75;
     }
     
     // 前方射程楕円を描画
@@ -664,13 +772,18 @@ export class Fleet extends PIXI.Container {
         this.cancelMove();
         target.cancelMove();
         
+        // ダメージ計算（攻撃力 - 防御力、最小ダメージは攻撃力の20%）
+        const baseDamage = this.attackPower;
+        const reducedDamage = baseDamage - target.defensePower;
+        const finalDamage = Math.max(Math.round(baseDamage * 0.2), reducedDamage);
+        
         // ビームエフェクト作成
         if (window.gameState.effects) {
             const beamColor = this.faction === 'alliance' ? 0x4444ff : 0xff4444;
             window.gameState.effects.createBeamEffect(this.x, this.y, target.x, target.y, beamColor);
             
             // ダメージテキスト表示
-            window.gameState.effects.createDamageText(target.x, target.y - 30, this.attackPower);
+            window.gameState.effects.createDamageText(target.x, target.y - 30, finalDamage);
         }
         
         // レーザー音再生
@@ -684,8 +797,8 @@ export class Fleet extends PIXI.Container {
         target.isInCombat = true;
         target.lastCombatTime = currentTime;
         
-        const isDestroyed = target.takeDamage(this.attackPower);
-        console.log(`${this.name} が ${target.name} を攻撃！ (残りHP: ${target.currentHP}) [戦闘状態: 両艦隊]`);
+        const isDestroyed = target.takeDamage(finalDamage);
+        console.log(`${this.name} が ${target.name} を攻撃！ ダメージ: ${finalDamage} (攻撃${baseDamage} - 防御${target.defensePower}) 残りHP: ${target.currentHP}`);
         
         if (isDestroyed) {
             // 爆発エフェクト作成
