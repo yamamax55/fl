@@ -226,14 +226,14 @@ fl/
 
 ## マスターデータ管理システム（JSONベース）
 ### 提督データ管理
-- **ファイル**: `data/admirals.json`
+- **ファイル**: `public/data/admirals.json`
 - **構造**: 提督ID、氏名、年齢、階級、陣営、11種類の能力値
 - **能力値**: mobility, attack, defense, command, tactics, leadership, intelligence, logistics, diplomacy, morale, experience
 - **範囲**: 各能力値は0-120の数値
 - **登録提督**: ヤン・ウェンリー、ラインハルト、ビッテンフェルト、ミッターマイヤー、ロイエンタール、アッテンボロー、ポプラン、シェーンコップ
 
 ### 艦隊データ管理
-- **ファイル**: `data/fleets.json`
+- **ファイル**: `public/data/fleets.json`
 - **構造**: 艦隊ID、艦隊名、陣営、種別、艦船数、火力、指揮系統
 - **指揮系統**: commander（司令官）、viceCommander（副司令官）、staffOfficer（参謀）
 - **役職制限**: 各役職は提督IDで管理、兼務禁止

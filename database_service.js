@@ -14,8 +14,8 @@ export class DatabaseService {
         try {
             // JSONデータを非同期で読み込み
             const [admiralsResponse, fleetsResponse] = await Promise.all([
-                fetch('./data/admirals.json'),
-                fetch('./data/fleets.json')
+                fetch('/data/admirals.json'),
+                fetch('/data/fleets.json')
             ]);
             
             this.admiralsData = await admiralsResponse.json();
@@ -26,6 +26,8 @@ export class DatabaseService {
             return true;
         } catch (error) {
             console.error('Failed to initialize DatabaseService:', error);
+            console.error('Error details:', error.message);
+            this.isInitialized = false;
             return false;
         }
     }
@@ -39,11 +41,23 @@ export class DatabaseService {
     // 艦隊司令官情報を取得
     async getFleetCommanderInfo(fleetId) {
         if (!this.isInitialized) {
-            await this.initialize();
+            const initResult = await this.initialize();
+            if (!initResult) {
+                console.error('Failed to initialize database service');
+                return null;
+            }
         }
         
-        const fleet = this.fleetsData?.fleets?.find(f => f.id === fleetId);
-        if (!fleet) return null;
+        if (!this.fleetsData || !this.fleetsData.fleets) {
+            console.error('Fleet data not available');
+            return null;
+        }
+        
+        const fleet = this.fleetsData.fleets.find(f => f.id === fleetId);
+        if (!fleet) {
+            console.error(`Fleet with ID ${fleetId} not found`);
+            return null;
+        }
         
         // 司令官情報を組み立て
         const commanderInfo = {
@@ -106,7 +120,18 @@ export class DatabaseService {
     
     // 提督IDから提督情報を取得
     getAdmiralById(admiralId) {
-        return this.admiralsData?.admirals?.find(admiral => admiral.id === admiralId) || null;
+        if (!this.admiralsData || !this.admiralsData.admirals) {
+            console.error('Admiral data not available');
+            return null;
+        }
+        
+        const admiral = this.admiralsData.admirals.find(admiral => admiral.id === admiralId);
+        if (!admiral) {
+            console.error(`Admiral with ID ${admiralId} not found`);
+            return null;
+        }
+        
+        return admiral;
     }
     
     // 提督の能力値を取得

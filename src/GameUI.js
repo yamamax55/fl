@@ -569,7 +569,17 @@ export class GameUI {
             } else {
                 details.push('');
                 details.push('=== 指揮系統 ===');
-                details.push('データベース接続エラー');
+                details.push('データ読み込み中...');
+                
+                // デバッグ情報
+                console.log(`Fleet ${fleet.name} (ID: ${fleet.fleetNumber}) commander info:`, fleet.commanderInfo);
+                const dbService = window.gameState?.dbService;
+                if (dbService) {
+                    console.log('DatabaseService status:', dbService.isInitialized);
+                    console.log('Fleet mapping:', dbService.fleetMapping);
+                } else {
+                    console.log('DatabaseService not available');
+                }
             }
             
             details.forEach(detail => {
