@@ -227,10 +227,13 @@ fl/
 │   ├── Effects.js      # ビジュアルエフェクト管理
 │   ├── Audio.js        # プロシージャル音響システム
 │   └── style.css       # スタイル
+├── data/
+│   ├── admirals.js     # 提督マスターデータ（静的インポート）
+│   └── fleets.js       # 艦隊マスターデータ（静的インポート）
 ├── public/
 │   ├── data/
-│   │   ├── admirals.json # 提督マスターデータ
-│   │   └── fleets.json   # 艦隊マスターデータ
+│   │   ├── admirals.json # 提督マスターデータ（バックアップ）
+│   │   └── fleets.json   # 艦隊マスターデータ（バックアップ）
 │   └── assets/         # ゲームアセット
 ├── database_service.js # JSONデータサービス
 ├── vite.config.js      # Vite設定

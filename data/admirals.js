@@ -1,0 +1,185 @@
+// 提督マスターデータ（静的エクスポート）
+export const admiralsData = {
+  "admirals": [
+    {
+      "id": 1,
+      "lastName": "ヤン",
+      "firstName": "ウェンリー",
+      "age": 33,
+      "rank": "元帥",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 85,
+        "attack": 105,
+        "defense": 110,
+        "command": 120,
+        "tactics": 115,
+        "leadership": 95,
+        "intelligence": 110,
+        "logistics": 85,
+        "diplomacy": 80,
+        "morale": 100,
+        "experience": 95
+      }
+    },
+    {
+      "id": 2,
+      "lastName": "ラインハルト",
+      "firstName": "フォン",
+      "age": 22,
+      "rank": "元帥",
+      "faction": "Empire",
+      "abilities": {
+        "mobility": 95,
+        "attack": 115,
+        "defense": 100,
+        "command": 118,
+        "tactics": 110,
+        "leadership": 120,
+        "intelligence": 105,
+        "logistics": 90,
+        "diplomacy": 85,
+        "morale": 115,
+        "experience": 85
+      }
+    },
+    {
+      "id": 3,
+      "lastName": "ビッテンフェルト",
+      "firstName": "フリッツ",
+      "age": 35,
+      "rank": "大将",
+      "faction": "Empire",
+      "abilities": {
+        "mobility": 110,
+        "attack": 120,
+        "defense": 85,
+        "command": 85,
+        "tactics": 80,
+        "leadership": 95,
+        "intelligence": 70,
+        "logistics": 75,
+        "diplomacy": 60,
+        "morale": 105,
+        "experience": 90
+      }
+    },
+    {
+      "id": 4,
+      "lastName": "ミッターマイヤー",
+      "firstName": "ヴォルフガング",
+      "age": 31,
+      "rank": "大将",
+      "faction": "Empire",
+      "abilities": {
+        "mobility": 115,
+        "attack": 105,
+        "defense": 95,
+        "command": 100,
+        "tactics": 105,
+        "leadership": 100,
+        "intelligence": 95,
+        "logistics": 90,
+        "diplomacy": 85,
+        "morale": 110,
+        "experience": 95
+      }
+    },
+    {
+      "id": 5,
+      "lastName": "ロイエンタール",
+      "firstName": "オスカー",
+      "age": 33,
+      "rank": "大将",
+      "faction": "Empire",
+      "abilities": {
+        "mobility": 100,
+        "attack": 110,
+        "defense": 105,
+        "command": 105,
+        "tactics": 110,
+        "leadership": 95,
+        "intelligence": 110,
+        "logistics": 95,
+        "diplomacy": 90,
+        "morale": 85,
+        "experience": 100
+      }
+    },
+    {
+      "id": 6,
+      "lastName": "アッテンボロー",
+      "firstName": "ダスティ",
+      "age": 28,
+      "rank": "大佐",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 95,
+        "attack": 85,
+        "defense": 90,
+        "command": 85,
+        "tactics": 80,
+        "leadership": 90,
+        "intelligence": 85,
+        "logistics": 80,
+        "diplomacy": 75,
+        "morale": 95,
+        "experience": 75
+      }
+    },
+    {
+      "id": 7,
+      "lastName": "ポプラン",
+      "firstName": "オリビエ",
+      "age": 26,
+      "rank": "中佐",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 105,
+        "attack": 95,
+        "defense": 80,
+        "command": 75,
+        "tactics": 85,
+        "leadership": 70,
+        "intelligence": 80,
+        "logistics": 65,
+        "diplomacy": 85,
+        "morale": 90,
+        "experience": 70
+      }
+    },
+    {
+      "id": 8,
+      "lastName": "シェーンコップ",
+      "firstName": "ワルター",
+      "age": 35,
+      "rank": "大佐",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 100,
+        "attack": 110,
+        "defense": 95,
+        "command": 90,
+        "tactics": 100,
+        "leadership": 85,
+        "intelligence": 95,
+        "logistics": 75,
+        "diplomacy": 70,
+        "morale": 85,
+        "experience": 90
+      }
+    }
+  ],
+  "ranks": [
+    {"id": 1, "name": "元帥", "order": 1},
+    {"id": 2, "name": "大将", "order": 2},
+    {"id": 3, "name": "中将", "order": 3},
+    {"id": 4, "name": "少将", "order": 4},
+    {"id": 5, "name": "准将", "order": 5},
+    {"id": 6, "name": "大佐", "order": 6},
+    {"id": 7, "name": "中佐", "order": 7},
+    {"id": 8, "name": "少佐", "order": 8},
+    {"id": 9, "name": "大尉", "order": 9},
+    {"id": 10, "name": "中尉", "order": 10}
+  ]
+};

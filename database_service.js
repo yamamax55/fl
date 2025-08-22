@@ -1,9 +1,12 @@
-// ブラウザ環境向けデータベースサービス（JSONデータ）
+// ブラウザ環境向けデータベースサービス（静的インポート）
+import { admiralsData } from './data/admirals.js';
+import { fleetsData } from './data/fleets.js';
+
 export class DatabaseService {
     constructor() {
         this.isInitialized = false;
-        this.admiralsData = null;
-        this.fleetsData = null;
+        this.admiralsData = admiralsData;
+        this.fleetsData = fleetsData;
         this.fleetMapping = {
             alliance: { 1: 1, 2: 2, 3: 3 },
             empire: { 1: 5, 2: 6, 3: 7 }
@@ -11,25 +14,12 @@ export class DatabaseService {
     }
     
     async initialize() {
-        try {
-            // JSONデータを非同期で読み込み
-            const [admiralsResponse, fleetsResponse] = await Promise.all([
-                fetch('/data/admirals.json'),
-                fetch('/data/fleets.json')
-            ]);
-            
-            this.admiralsData = await admiralsResponse.json();
-            this.fleetsData = await fleetsResponse.json();
-            
-            this.isInitialized = true;
-            console.log('DatabaseService initialized with JSON data');
-            return true;
-        } catch (error) {
-            console.error('Failed to initialize DatabaseService:', error);
-            console.error('Error details:', error.message);
-            this.isInitialized = false;
-            return false;
-        }
+        // 静的インポートなので即座に初期化完了
+        this.isInitialized = true;
+        console.log('DatabaseService initialized with static data');
+        console.log('Admirals count:', this.admiralsData.admirals.length);
+        console.log('Fleets count:', this.fleetsData.fleets.length);
+        return true;
     }
     
     // 艦隊番号から艦隊IDを取得
@@ -41,16 +31,7 @@ export class DatabaseService {
     // 艦隊司令官情報を取得
     async getFleetCommanderInfo(fleetId) {
         if (!this.isInitialized) {
-            const initResult = await this.initialize();
-            if (!initResult) {
-                console.error('Failed to initialize database service');
-                return null;
-            }
-        }
-        
-        if (!this.fleetsData || !this.fleetsData.fleets) {
-            console.error('Fleet data not available');
-            return null;
+            await this.initialize();
         }
         
         const fleet = this.fleetsData.fleets.find(f => f.id === fleetId);
@@ -58,6 +39,8 @@ export class DatabaseService {
             console.error(`Fleet with ID ${fleetId} not found`);
             return null;
         }
+        
+        console.log(`Getting commander info for fleet ${fleetId}:`, fleet);
         
         // 司令官情報を組み立て
         const commanderInfo = {
@@ -90,6 +73,7 @@ export class DatabaseService {
                 commanderInfo.commander_first_name = commander.firstName;
                 commanderInfo.commander_age = commander.age;
                 commanderInfo.commander_rank = commander.rank;
+                console.log(`Commander found: ${commander.rank} ${commander.lastName} ${commander.firstName}`);
             }
         }
         
@@ -120,11 +104,6 @@ export class DatabaseService {
     
     // 提督IDから提督情報を取得
     getAdmiralById(admiralId) {
-        if (!this.admiralsData || !this.admiralsData.admirals) {
-            console.error('Admiral data not available');
-            return null;
-        }
-        
         const admiral = this.admiralsData.admirals.find(admiral => admiral.id === admiralId);
         if (!admiral) {
             console.error(`Admiral with ID ${admiralId} not found`);

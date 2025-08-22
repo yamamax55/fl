@@ -135,17 +135,34 @@ export class Game {
     // 艦隊の司令官情報をロード
     async loadFleetCommanderInfo(fleet) {
         try {
+            // データベースサービスの初期化を確実に実行
+            await this.dbService.initialize();
+            
             const fleetId = this.dbService.getFleetIdByNumber(fleet.fleetNumber, fleet.faction);
+            console.log(`Fleet ${fleet.name} (number: ${fleet.fleetNumber}, faction: ${fleet.faction}) -> Fleet ID: ${fleetId}`);
+            
             if (fleetId) {
                 const commanderInfo = await this.dbService.getFleetCommanderInfo(fleetId);
-                fleet.commanderInfo = commanderInfo;
-                fleet.updateFleetPerformance(); // 提督能力値に基づいて性能を更新
-                console.log(`${fleet.name}の司令官情報をロードしました:`, commanderInfo);
+                if (commanderInfo) {
+                    fleet.commanderInfo = commanderInfo;
+                    fleet.updateFleetPerformance(); // 提督能力値に基づいて性能を更新
+                    console.log(`${fleet.name}の司令官情報をロードしました:`, commanderInfo);
+                    
+                    // UIの再描画をトリガー
+                    if (this.ui) {
+                        // UI更新はゲームループで自動的に行われる
+                    }
+                } else {
+                    console.warn(`${fleet.name}の司令官情報が見つかりません`);
+                    fleet.commanderInfo = null;
+                }
             } else {
-                console.warn(`${fleet.name}のfleet IDが見つかりません`);
+                console.warn(`${fleet.name}のfleet IDが見つかりません (fleetNumber: ${fleet.fleetNumber}, faction: ${fleet.faction})`);
+                fleet.commanderInfo = null;
             }
         } catch (error) {
             console.error(`${fleet.name}の司令官情報ロードエラー:`, error);
+            fleet.commanderInfo = null;
         }
     }
     
