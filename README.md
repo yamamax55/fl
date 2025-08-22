@@ -194,9 +194,9 @@ npm run dev
 - ✅ UI表示強化
   - 攻撃力・防御力の詳細表示
   - 提督補正が反映された実際の値を表示
-- ✅ データベースシステム統合
-  - SQLite3による階級・提督・艦隊管理
-  - ブラウザ対応静的データサービス
+- ✅ マスターデータ管理システム
+  - JSONベースの提督・艦隊データ管理
+  - fetch APIによる非同期データ読み込み
   - 指揮系統の可視化
 
 **次のPhase: 高度なゲームシステム実装予定**
@@ -222,12 +222,16 @@ fl/
 │   ├── main.js         # エントリーポイント
 │   ├── Game.js         # ゲーム管理クラス
 │   ├── Fleet.js        # 艦隊クラス（三角形表示、戦闘、移動）
-│   ├── UI.js           # 包括的UIシステム
+│   ├── GameUI.js       # UIシステム
 │   ├── Effects.js      # ビジュアルエフェクト管理
 │   ├── Audio.js        # プロシージャル音響システム
 │   └── style.css       # スタイル
+├── data/
+│   ├── admirals.json   # 提督マスターデータ
+│   └── fleets.json     # 艦隊マスターデータ
 ├── public/
 │   └── assets/         # ゲームアセット
+├── database_service.js # JSONデータサービス
 ├── vite.config.js      # Vite設定
 ├── package.json        # プロジェクト設定
 ├── CLAUDE.md           # 開発ログ

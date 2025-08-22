@@ -1,160 +1,122 @@
-// ブラウザ環境用データベースサービスクラス（静的データ）
+// ブラウザ環境向けデータベースサービス（JSONデータ）
 export class DatabaseService {
     constructor() {
         this.isInitialized = false;
-        this.fleetData = {};
-    }
-
-    // データベース初期化（静的データをロード）
-    async initialize() {
-        if (this.isInitialized) return;
-
-        // 静的な艦隊・司令官データ
-        this.fleetData = {
-            1: { // 同盟第1艦隊
-                fleet_id: 1,
-                fleet_name: '第1艦隊',
-                faction: 'Alliance',
-                commander_last_name: 'ヤン',
-                commander_first_name: 'ウェンリー',
-                commander_age: 33,
-                commander_rank: '元帥',
-                vice_last_name: null,
-                vice_first_name: null,
-                vice_age: null,
-                vice_rank: null,
-                staff_last_name: null,
-                staff_first_name: null,
-                staff_age: null,
-                staff_rank: null
-            },
-            2: { // 同盟第2艦隊
-                fleet_id: 2,
-                fleet_name: '第2艦隊',
-                faction: 'Alliance',
-                commander_last_name: null,
-                commander_first_name: null,
-                commander_age: null,
-                commander_rank: null,
-                vice_last_name: 'ラインハルト',
-                vice_first_name: 'フォン',
-                vice_age: 22,
-                vice_rank: '元帥',
-                staff_last_name: null,
-                staff_first_name: null,
-                staff_age: null,
-                staff_rank: null
-            },
-            3: { // 同盟第3艦隊
-                fleet_id: 3,
-                fleet_name: '第3艦隊',
-                faction: 'Alliance',
-                commander_last_name: null,
-                commander_first_name: null,
-                commander_age: null,
-                commander_rank: null,
-                vice_last_name: null,
-                vice_first_name: null,
-                vice_age: null,
-                vice_rank: null,
-                staff_last_name: 'ビッテンフェルト',
-                staff_first_name: 'フリッツ',
-                staff_age: 35,
-                staff_rank: '大将'
-            },
-            5: { // 帝国ローエングラム艦隊
-                fleet_id: 5,
-                fleet_name: 'ローエングラム艦隊',
-                faction: 'Empire',
-                commander_last_name: 'ラインハルト',
-                commander_first_name: 'フォン',
-                commander_age: 22,
-                commander_rank: '元帥',
-                vice_last_name: null,
-                vice_first_name: null,
-                vice_age: null,
-                vice_rank: null,
-                staff_last_name: null,
-                staff_first_name: null,
-                staff_age: null,
-                staff_rank: null
-            },
-            6: { // 帝国ミッターマイヤー艦隊
-                fleet_id: 6,
-                fleet_name: 'ミッターマイヤー艦隊',
-                faction: 'Empire',
-                commander_last_name: 'ミッターマイヤー',
-                commander_first_name: 'ヴォルフガング',
-                commander_age: 31,
-                commander_rank: '大将',
-                vice_last_name: null,
-                vice_first_name: null,
-                vice_age: null,
-                vice_rank: null,
-                staff_last_name: null,
-                staff_first_name: null,
-                staff_age: null,
-                staff_rank: null
-            },
-            7: { // 帝国ロイエンタール艦隊
-                fleet_id: 7,
-                fleet_name: 'ロイエンタール艦隊',
-                faction: 'Empire',
-                commander_last_name: 'ロイエンタール',
-                commander_first_name: 'オスカー',
-                commander_age: 33,
-                commander_rank: '大将',
-                vice_last_name: null,
-                vice_first_name: null,
-                vice_age: null,
-                vice_rank: null,
-                staff_last_name: null,
-                staff_first_name: null,
-                staff_age: null,
-                staff_rank: null
-            }
+        this.admiralsData = null;
+        this.fleetsData = null;
+        this.fleetMapping = {
+            alliance: { 1: 1, 2: 2, 3: 3 },
+            empire: { 1: 5, 2: 6, 3: 7 }
         };
-
-        this.isInitialized = true;
-        console.log('データベースサービスが初期化されました（静的データ）');
     }
-
-    // 艦隊の司令官情報を取得
+    
+    async initialize() {
+        try {
+            // JSONデータを非同期で読み込み
+            const [admiralsResponse, fleetsResponse] = await Promise.all([
+                fetch('./data/admirals.json'),
+                fetch('./data/fleets.json')
+            ]);
+            
+            this.admiralsData = await admiralsResponse.json();
+            this.fleetsData = await fleetsResponse.json();
+            
+            this.isInitialized = true;
+            console.log('DatabaseService initialized with JSON data');
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize DatabaseService:', error);
+            return false;
+        }
+    }
+    
+    // 艦隊番号から艦隊IDを取得
+    getFleetIdByNumber(fleetNumber, faction) {
+        const mapping = this.fleetMapping[faction];
+        return mapping ? mapping[fleetNumber] : null;
+    }
+    
+    // 艦隊司令官情報を取得
     async getFleetCommanderInfo(fleetId) {
         if (!this.isInitialized) {
-            throw new Error('データベースが初期化されていません');
+            await this.initialize();
         }
-
-        return this.fleetData[fleetId] || null;
-    }
-
-    // 艦隊番号から艦隊IDを取得するマッピング
-    getFleetIdByNumber(fleetNumber, faction) {
-        // ゲーム内の艦隊番号とデータベースのfleet_idをマッピング
-        const fleetMapping = {
-            'alliance': {
-                1: 1, // 第1艦隊
-                2: 2, // 第2艦隊
-                3: 3  // 第3艦隊
-            },
-            'empire': {
-                1: 5, // ローエングラム艦隊
-                2: 6, // ミッターマイヤー艦隊
-                3: 7  // ロイエンタール艦隊
-            }
+        
+        const fleet = this.fleetsData?.fleets?.find(f => f.id === fleetId);
+        if (!fleet) return null;
+        
+        // 司令官情報を組み立て
+        const commanderInfo = {
+            fleet_id: fleet.id,
+            fleet_name: fleet.name,
+            faction: fleet.faction,
+            fleet_type: fleet.type,
+            ship_count: fleet.shipCount,
+            total_firepower: fleet.totalFirepower,
+            status: fleet.status,
+            commander_last_name: null,
+            commander_first_name: null,
+            commander_age: null,
+            commander_rank: null,
+            vice_last_name: null,
+            vice_first_name: null,
+            vice_age: null,
+            vice_rank: null,
+            staff_last_name: null,
+            staff_first_name: null,
+            staff_age: null,
+            staff_rank: null
         };
-
-        return fleetMapping[faction]?.[fleetNumber] || null;
+        
+        // 司令官情報を追加
+        if (fleet.command.commander) {
+            const commander = this.getAdmiralById(fleet.command.commander);
+            if (commander) {
+                commanderInfo.commander_last_name = commander.lastName;
+                commanderInfo.commander_first_name = commander.firstName;
+                commanderInfo.commander_age = commander.age;
+                commanderInfo.commander_rank = commander.rank;
+            }
+        }
+        
+        // 副司令官情報を追加
+        if (fleet.command.viceCommander) {
+            const viceCommander = this.getAdmiralById(fleet.command.viceCommander);
+            if (viceCommander) {
+                commanderInfo.vice_last_name = viceCommander.lastName;
+                commanderInfo.vice_first_name = viceCommander.firstName;
+                commanderInfo.vice_age = viceCommander.age;
+                commanderInfo.vice_rank = viceCommander.rank;
+            }
+        }
+        
+        // 参謀情報を追加
+        if (fleet.command.staffOfficer) {
+            const staffOfficer = this.getAdmiralById(fleet.command.staffOfficer);
+            if (staffOfficer) {
+                commanderInfo.staff_last_name = staffOfficer.lastName;
+                commanderInfo.staff_first_name = staffOfficer.firstName;
+                commanderInfo.staff_age = staffOfficer.age;
+                commanderInfo.staff_rank = staffOfficer.rank;
+            }
+        }
+        
+        return commanderInfo;
     }
-
-    // データベース接続を閉じる
+    
+    // 提督IDから提督情報を取得
+    getAdmiralById(admiralId) {
+        return this.admiralsData?.admirals?.find(admiral => admiral.id === admiralId) || null;
+    }
+    
+    // 提督の能力値を取得
+    getAdmiralAbilities(admiralId) {
+        const admiral = this.getAdmiralById(admiralId);
+        return admiral ? admiral.abilities : null;
+    }
+    
+    // データベース接続を閉じる（互換性のため残す）
     close() {
-        if (this.fleetDb) {
-            this.fleetDb.close();
-        }
-        if (this.admiralDb) {
-            this.admiralDb.close();
-        }
         this.isInitialized = false;
     }
 }

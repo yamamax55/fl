@@ -242,39 +242,52 @@ export class Fleet extends PIXI.Container {
         console.log(`${this.name}: 機動${mobilityValue}, 攻撃${attackValue}, 防御${defenseValue} → 移動${this.moveSpeed.toFixed(2)}, 攻撃${this.attackPower}, 防御${this.defensePower}`);
     }
     
-    // 司令官の能力値を取得（静的データベース）
+    // 司令官の能力値を取得（JSONデータベース）
     getCommanderAbility(position, abilityType) {
         if (!this.commanderInfo) return null;
         
-        let lastName, firstName;
+        let admiralId = null;
         if (position === 'commander') {
-            lastName = this.commanderInfo.commander_last_name;
-            firstName = this.commanderInfo.commander_first_name;
+            // 司令官の提督IDを取得するため、データベースサービスから検索
+            const lastName = this.commanderInfo.commander_last_name;
+            const firstName = this.commanderInfo.commander_first_name;
+            if (lastName && firstName) {
+                admiralId = this.findAdmiralId(lastName, firstName);
+            }
         } else if (position === 'vice') {
-            lastName = this.commanderInfo.vice_last_name;
-            firstName = this.commanderInfo.vice_first_name;
+            const lastName = this.commanderInfo.vice_last_name;
+            const firstName = this.commanderInfo.vice_first_name;
+            if (lastName && firstName) {
+                admiralId = this.findAdmiralId(lastName, firstName);
+            }
         } else if (position === 'staff') {
-            lastName = this.commanderInfo.staff_last_name;
-            firstName = this.commanderInfo.staff_first_name;
+            const lastName = this.commanderInfo.staff_last_name;
+            const firstName = this.commanderInfo.staff_first_name;
+            if (lastName && firstName) {
+                admiralId = this.findAdmiralId(lastName, firstName);
+            }
         }
         
-        if (!lastName || !firstName) return null;
+        if (!admiralId) return null;
         
-        // 静的な能力値データ（DatabaseServiceと連携）
-        const abilityData = {
-            'ヤンウェンリー': { mobility: 85, attack: 105, defense: 110 },
-            'ラインハルトフォン': { mobility: 95, attack: 115, defense: 100 },
-            'ビッテンフェルトフリッツ': { mobility: 110, attack: 120, defense: 85 },
-            'ミッターマイヤーヴォルフガング': { mobility: 115, attack: 105, defense: 95 },
-            'ロイエンタールオスカー': { mobility: 100, attack: 110, defense: 105 }
-        };
+        // DatabaseServiceから能力値を取得
+        const dbService = window.gameState?.dbService;
+        if (!dbService) return 75; // デフォルト値
         
-        const key = lastName + firstName;
-        const commander = abilityData[key];
+        const abilities = dbService.getAdmiralAbilities(admiralId);
+        return abilities ? abilities[abilityType] || 75 : 75;
+    }
+    
+    // 提督名から提督IDを検索
+    findAdmiralId(lastName, firstName) {
+        const dbService = window.gameState?.dbService;
+        if (!dbService || !dbService.admiralsData) return null;
         
-        if (!commander) return 75; // デフォルト値
+        const admiral = dbService.admiralsData.admirals.find(a => 
+            a.lastName === lastName && a.firstName === firstName
+        );
         
-        return commander[abilityType] || 75;
+        return admiral ? admiral.id : null;
     }
     
     // 前方射程楕円を描画
