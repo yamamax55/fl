@@ -4,6 +4,7 @@ import { GameUI } from './GameUI.js';
 import { Effects } from './Effects.js';
 import { Audio } from './Audio.js';
 import { DatabaseService } from '../database_service.js';
+import { MapSystem } from './MapSystem.js';
 
 // ゲーム管理クラス
 export class Game {
@@ -29,6 +30,10 @@ export class Game {
         
         // データベースサービス初期化
         this.dbService = new DatabaseService();
+        
+        // マップシステム初期化
+        this.mapSystem = null;
+        this.currentMapId = 1; // デフォルトマップ
         
         // グローバル状態として設定
         window.gameState = this;
@@ -72,9 +77,18 @@ export class Game {
 
         // データベースサービス初期化
         await this.dbService.initialize();
+        
+        // マップシステム初期化
+        this.mapSystem = new MapSystem(this.app, this.gameArea);
+        await this.mapSystem.loadMapsData();
+        this.mapSystem.setCurrentMap(this.currentMapId);
+        this.mapSystem.createMapContainers(this.app.stage);
 
         // 艦隊作成
         this.createFleets();
+        
+        // マップレンダリング
+        this.mapSystem.renderCurrentMap();
         
         // UI初期化
         this.ui = new GameUI(this.app);
@@ -108,11 +122,18 @@ export class Game {
     }
     
     createAllianceFleets() {
-        // 自由惑星同盟艦隊（青色）- 左側に配置
+        // 自由惑星同盟艦隊（青色）- マップのスポーン地点に配置
+        const spawnPoints = this.mapSystem.getSpawnPoints('alliance');
+        
         for (let i = 0; i < 3; i++) {
+            const spawnPoint = spawnPoints[i] || { 
+                x: this.gameArea.x + 100, 
+                y: this.gameArea.y + 220 + i * 80 
+            };
+            
             const fleet = new Fleet(
-                this.gameArea.x + 50 + i * 60,    // x座標（ゲームエリア左側）
-                this.gameArea.y + 220 + i * 80,   // y座標（ゲームエリア内）
+                spawnPoint.x,         // マップのスポーン地点x座標
+                spawnPoint.y,         // マップのスポーン地点y座標
                 0x0000ff,             // 青色
                 `同盟第${i + 1}艦隊`,   // 名前
                 'alliance',           // 陣営
@@ -134,11 +155,18 @@ export class Game {
     }
     
     createEmpireFleets() {
-        // 銀河帝国艦隊（赤色）- 右側に配置
+        // 銀河帝国艦隊（赤色）- マップのスポーン地点に配置
+        const spawnPoints = this.mapSystem.getSpawnPoints('empire');
+        
         for (let i = 0; i < 3; i++) {
+            const spawnPoint = spawnPoints[i] || { 
+                x: this.gameArea.x + this.gameArea.width - 100, 
+                y: this.gameArea.y + 220 + i * 80 
+            };
+            
             const fleet = new Fleet(
-                this.gameArea.x + this.gameArea.width - 110 + i * 60,  // x座標（ゲームエリア右側）
-                this.gameArea.y + 220 + i * 80,                       // y座標（ゲームエリア内）
+                spawnPoint.x,         // マップのスポーン地点x座標
+                spawnPoint.y,         // マップのスポーン地点y座標
                 0xff0000,             // 赤色
                 `帝国第${i + 1}艦隊`,   // 名前
                 'empire',             // 陣営

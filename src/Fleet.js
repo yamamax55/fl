@@ -13,6 +13,7 @@ export class Fleet extends PIXI.Container {
         this.targetY = y;
         this.isSelected = false;
         this.baseMoveSpeed = 2; // 基本移動速度
+        this.currentTerrainEffect = null; // 現在の地形効果
         this.moveSpeed = 2; // 実際の移動速度（提督能力で調整）
         this.maxHP = 10000; // 最大HP
         this.currentHP = 10000; // 現在のHP
@@ -869,6 +870,9 @@ export class Fleet extends PIXI.Container {
         // HPが0以下の場合は何もしない
         if (this.currentHP <= 0) return;
         
+        // 地形効果の更新
+        this.updateTerrainEffect();
+        
         // 回転アニメーション処理
         this.updateRotation();
         
@@ -1055,5 +1059,71 @@ export class Fleet extends PIXI.Container {
         
         // 選択状態を解除
         this.deselect();
+    }
+
+    // 地形効果を更新
+    updateTerrainEffect() {
+        if (!window.gameState || !window.gameState.mapSystem) {
+            return;
+        }
+
+        const mapSystem = window.gameState.mapSystem;
+        const terrainEffect = mapSystem.getTerrainEffectAt(this.x, this.y);
+        
+        if (terrainEffect !== this.currentTerrainEffect) {
+            this.currentTerrainEffect = terrainEffect;
+            this.applyTerrainEffect();
+        }
+    }
+
+    // 地形効果を適用
+    applyTerrainEffect() {
+        // 基本値にリセット
+        let moveSpeedMultiplier = 1.0;
+        let attackMultiplier = 1.0;
+        let defenseMultiplier = 1.0;
+        let rangeMultiplier = 1.0;
+
+        // 地形効果を適用
+        if (this.currentTerrainEffect) {
+            if (this.currentTerrainEffect.moveSpeed !== undefined) {
+                moveSpeedMultiplier = this.currentTerrainEffect.moveSpeed;
+            }
+            if (this.currentTerrainEffect.attack !== undefined) {
+                attackMultiplier = this.currentTerrainEffect.attack;
+            }
+            if (this.currentTerrainEffect.defense !== undefined) {
+                defenseMultiplier = this.currentTerrainEffect.defense;
+            }
+            if (this.currentTerrainEffect.range !== undefined) {
+                rangeMultiplier = this.currentTerrainEffect.range;
+            }
+        }
+
+        // 提督能力値による補正を考慮した最終値を計算
+        const admiralMoveSpeedRatio = this.getAdmiralMoveSpeedRatio();
+        this.moveSpeed = this.baseMoveSpeed * admiralMoveSpeedRatio * moveSpeedMultiplier;
+        
+        // 攻撃力・防御力・射程の更新
+        this.terrainAttackMultiplier = attackMultiplier;
+        this.terrainDefenseMultiplier = defenseMultiplier;
+        this.terrainRangeMultiplier = rangeMultiplier;
+        
+        // 射程距離を更新
+        this.range = 150 * rangeMultiplier;
+    }
+
+    // 地形効果を考慮した攻撃力を取得
+    getAttackPower() {
+        const baseAttack = this.getAdmiralAttackPower();
+        const terrainMultiplier = this.terrainAttackMultiplier || 1.0;
+        return Math.round(baseAttack * terrainMultiplier);
+    }
+
+    // 地形効果を考慮した防御力を取得
+    getDefensePower() {
+        const baseDefense = this.getAdmiralDefensePower();
+        const terrainMultiplier = this.terrainDefenseMultiplier || 1.0;
+        return Math.round(baseDefense * terrainMultiplier);
     }
 }
