@@ -217,7 +217,7 @@ export class Game {
                 
                 selectedFleets.forEach(fleet => {
                     if (fleet.interactionMode === 'move') {
-                        // 最小移動距離チェック（80px未満は移動しない）
+                        // 最小移動距離チェック（40px未満は移動しない）
                         const targetX = x - 10;
                         const targetY = y - 10;
                         const distance = Math.sqrt(
@@ -225,8 +225,8 @@ export class Game {
                             Math.pow(targetY - fleet.y, 2)
                         );
                         
-                        if (distance < 80) {
-                            console.log(`${fleet.name}: 移動距離が短すぎます (${Math.round(distance)}px < 80px)`);
+                        if (distance < 40) {
+                            console.log(`${fleet.name}: 移動距離が短すぎます (${Math.round(distance)}px < 40px)`);
                             return; // 移動せず
                         }
                         

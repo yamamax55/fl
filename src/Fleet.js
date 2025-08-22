@@ -1029,7 +1029,7 @@ export class Fleet extends PIXI.Container {
             } else {
                 // ドラッグ距離が短い場合はゴースト艦隊を隠す
                 if (this.ghostFleet) {
-                    this.ghostFleet.visible = false;
+                    this.ghostFleet.visible = true;
                 }
             }
             

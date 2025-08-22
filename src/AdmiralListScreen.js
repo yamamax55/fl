@@ -811,19 +811,35 @@ export class AdmiralListScreen {
 
     apply3DEffect(cardContainer, isHover) {
         if (isHover) {
-            // ホバー時の3D効果
-            cardContainer.filters = [new PIXI.DropShadowFilter({
-                distance: 15,
-                angle: 225,
-                color: 0x000000,
-                alpha: 0.5,
-                blur: 8
-            })];
+            // ホバー時の3D効果（DropShadowFilterの代わりにコンテナの影を作成）
+            this.createCardShadow(cardContainer);
         } else {
             // 通常状態に戻す
-            cardContainer.filters = null;
+            this.removeCardShadow(cardContainer);
             cardContainer.skew.set(0, 0);
             cardContainer.rotation = 0;
+        }
+    }
+
+    createCardShadow(cardContainer) {
+        // 既存の影を削除
+        this.removeCardShadow(cardContainer);
+        
+        // 影の作成（フィルターを使わずにシンプルな影）
+        const shadow = new PIXI.Graphics();
+        shadow.roundRect(3, 3, 285, 185, 10); // 少し右下にずらして影効果
+        shadow.fill({ color: 0x000000, alpha: 0.2 });
+        
+        // 影をカードの背後に追加
+        cardContainer.addChildAt(shadow, 0);
+        cardContainer._shadow = shadow;
+    }
+
+    removeCardShadow(cardContainer) {
+        if (cardContainer._shadow) {
+            cardContainer.removeChild(cardContainer._shadow);
+            cardContainer._shadow.destroy();
+            cardContainer._shadow = null;
         }
     }
 
@@ -927,7 +943,7 @@ export class AdmiralListScreen {
 
     createViewModeButtons(filterContainer) {
         const viewModeContainer = new PIXI.Container();
-        viewModeContainer.x = -250;
+        viewModeContainer.x = 320; // 比較ボタンの右側に配置
         viewModeContainer.y = 25;
 
         const viewModeButtons = [
