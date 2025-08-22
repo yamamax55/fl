@@ -23,8 +23,8 @@
       "totalFirepower": 10000,
       "status": "Active",
       "command": {
-        "commander": null,
-        "viceCommander": 2,
+        "commander": 6,
+        "viceCommander": null,
         "staffOfficer": null
       }
     },
@@ -37,9 +37,9 @@
       "totalFirepower": 7500,
       "status": "Active",
       "command": {
-        "commander": null,
+        "commander": 7,
         "viceCommander": null,
-        "staffOfficer": 3
+        "staffOfficer": null
       }
     },
     {
@@ -51,7 +51,7 @@
       "totalFirepower": 25000,
       "status": "Active",
       "command": {
-        "commander": null,
+        "commander": 8,
         "viceCommander": null,
         "staffOfficer": null
       }

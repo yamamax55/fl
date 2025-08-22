@@ -104,6 +104,69 @@
         "morale": 85,
         "experience": 100
       }
+    },
+    {
+      "id": 6,
+      "lastName": "アッテンボロー",
+      "firstName": "ダスティ",
+      "age": 28,
+      "rank": "大佐",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 95,
+        "attack": 85,
+        "defense": 90,
+        "command": 85,
+        "tactics": 80,
+        "leadership": 90,
+        "intelligence": 85,
+        "logistics": 80,
+        "diplomacy": 75,
+        "morale": 95,
+        "experience": 75
+      }
+    },
+    {
+      "id": 7,
+      "lastName": "ポプラン",
+      "firstName": "オリビエ",
+      "age": 26,
+      "rank": "中佐",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 105,
+        "attack": 95,
+        "defense": 80,
+        "command": 75,
+        "tactics": 85,
+        "leadership": 70,
+        "intelligence": 80,
+        "logistics": 65,
+        "diplomacy": 85,
+        "morale": 90,
+        "experience": 70
+      }
+    },
+    {
+      "id": 8,
+      "lastName": "シェーンコップ",
+      "firstName": "ワルター",
+      "age": 35,
+      "rank": "大佐",
+      "faction": "Alliance",
+      "abilities": {
+        "mobility": 100,
+        "attack": 110,
+        "defense": 95,
+        "command": 90,
+        "tactics": 100,
+        "leadership": 85,
+        "intelligence": 95,
+        "logistics": 75,
+        "diplomacy": 70,
+        "morale": 85,
+        "experience": 90
+      }
     }
   ],
   "ranks": [
