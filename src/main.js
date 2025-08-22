@@ -3,16 +3,18 @@ import { TitleScreen } from './TitleScreen.js';
 import { FactionSelectScreen } from './FactionSelectScreen.js';
 import { AdmiralListScreen } from './AdmiralListScreen.js';
 import { StrategicPhaseScreen } from './StrategicPhaseScreen.js';
+import { FleetListScreen } from './FleetListScreen.js';
 import admiralsData from '../public/data/admirals.json';
 import * as PIXI from 'pixi.js';
 
 // グローバル状態管理
-let currentScreen = 'title'; // 'title' | 'faction' | 'admirals' | 'strategic' | 'game'
+let currentScreen = 'title'; // 'title' | 'faction' | 'admirals' | 'strategic' | 'fleets' | 'game'
 let app = null;
 let titleScreen = null;
 let factionSelectScreen = null;
 let admiralListScreen = null;
 let strategicPhaseScreen = null;
+let fleetListScreen = null;
 let game = null;
 let selectedFaction = null;
 let gameState = {
@@ -173,6 +175,11 @@ async function transitionToStrategicPhase() {
                 transitionToTacticalPhase(territoryData);
             });
             
+            // 艦隊一覧画面への遷移コールバック設定
+            strategicPhaseScreen.onFleetListCallback = () => {
+                transitionToFleetList();
+            };
+            
             // 戻るコールバック設定
             strategicPhaseScreen.setOnBackCallback(() => {
                 returnToTitle();
@@ -245,6 +252,68 @@ async function transitionToTacticalPhase(territoryData) {
         console.error('戦術フェーズ遷移エラー:', error);
         // エラー時は戦略フェーズに戻る
         returnToStrategicPhase();
+    }
+}
+
+// 艦隊一覧画面への遷移
+async function transitionToFleetList() {
+    try {
+        console.log('艦隊一覧画面に遷移中...');
+        
+        // 戦略フェーズ画面を隠す
+        if (strategicPhaseScreen) {
+            strategicPhaseScreen.hide();
+            app.stage.removeChild(strategicPhaseScreen.getContainer());
+        }
+        
+        // 艦隊一覧画面を初期化
+        if (!fleetListScreen) {
+            fleetListScreen = new FleetListScreen(app);
+            
+            // 非同期初期化を実行
+            await fleetListScreen.init();
+            
+            // 戻るコールバック設定
+            fleetListScreen.setOnBackCallback(() => {
+                returnToStrategicPhaseFromFleetList();
+            });
+        }
+        
+        app.stage.addChild(fleetListScreen.getContainer());
+        fleetListScreen.show();
+        
+        currentScreen = 'fleets';
+        console.log('艦隊一覧画面遷移完了');
+        
+    } catch (error) {
+        console.error('艦隊一覧画面遷移エラー:', error);
+        returnToStrategicPhase();
+    }
+}
+
+// 艦隊一覧画面から戦略フェーズに戻る
+function returnToStrategicPhaseFromFleetList() {
+    try {
+        console.log('戦略フェーズに戻ります');
+        
+        // 艦隊一覧画面を隠す
+        if (fleetListScreen) {
+            fleetListScreen.hide();
+            app.stage.removeChild(fleetListScreen.getContainer());
+        }
+        
+        // 戦略フェーズ画面を再表示
+        if (strategicPhaseScreen) {
+            app.stage.addChild(strategicPhaseScreen.getContainer());
+            strategicPhaseScreen.show();
+        }
+        
+        currentScreen = 'strategic';
+        console.log('戦略フェーズ復帰完了');
+        
+    } catch (error) {
+        console.error('戦略フェーズ復帰エラー:', error);
+        returnToTitle();
     }
 }
 
@@ -386,6 +455,8 @@ document.addEventListener('keydown', (event) => {
             if (confirm('タイトル画面に戻りますか？')) {
                 returnToTitle();
             }
+        } else if (currentScreen === 'fleets') {
+            returnToStrategicPhaseFromFleetList();
         } else if (currentScreen === 'faction' || currentScreen === 'admirals') {
             returnToTitle();
         }
@@ -411,6 +482,11 @@ function returnToTitle() {
         if (strategicPhaseScreen) {
             strategicPhaseScreen.hide();
             strategicPhaseScreen = null;
+        }
+        
+        if (fleetListScreen) {
+            fleetListScreen.destroy();
+            fleetListScreen = null;
         }
         
         if (admiralListScreen) {

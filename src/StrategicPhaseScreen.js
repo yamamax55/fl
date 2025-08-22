@@ -29,7 +29,7 @@ export class StrategicPhaseScreen {
         this.resourcePanel = null;
         this.actionPanel = null;
         this.galaxyMap = null;
-        this.fleetListPanel = null;
+        this.mainInfoPanel = null;
         
         // コールバック
         this.onStartBattle = null;
@@ -44,7 +44,7 @@ export class StrategicPhaseScreen {
         this.createGalaxyMap();
         this.createTurnInfoPanel();
         this.createResourcePanel();
-        this.createFleetListPanel();
+        this.createMainInfoPanel();
         this.createActionPanel();
         this.createNavigationButtons();
         this.setupEventListeners();
@@ -135,9 +135,9 @@ export class StrategicPhaseScreen {
         this.galaxyMap.x = 200;
         this.galaxyMap.y = 80;
         
-        // 銀河地図背景（幅を調整して艦隊一覧用のスペースを確保）
+        // 銀河地図背景（フル幅に戻す）
         const mapBg = new PIXI.Graphics();
-        mapBg.roundRect(0, 0, 560, 480, 10);
+        mapBg.roundRect(0, 0, 700, 480, 10);
         mapBg.fill(0x001133);
         mapBg.stroke({ width: 2, color: 0x0066CC });
         this.galaxyMap.addChild(mapBg);
@@ -398,20 +398,20 @@ export class StrategicPhaseScreen {
         this.container.addChild(this.resourcePanel);
     }
 
-    createFleetListPanel() {
-        this.fleetListPanel = new PIXI.Container();
-        this.fleetListPanel.x = 780;
-        this.fleetListPanel.y = 80;
+    createMainInfoPanel() {
+        this.mainInfoPanel = new PIXI.Container();
+        this.mainInfoPanel.x = 920;
+        this.mainInfoPanel.y = 80;
 
         // 背景パネル
         const panelBg = new PIXI.Graphics();
-        panelBg.roundRect(0, 0, 480, 480, 10);
+        panelBg.roundRect(0, 0, 340, 480, 10);
         panelBg.fill(0x001122);
         panelBg.stroke({ width: 2, color: 0x0066CC });
-        this.fleetListPanel.addChild(panelBg);
+        this.mainInfoPanel.addChild(panelBg);
 
         // タイトル
-        const titleText = new PIXI.Text('艦隊一覧', new PIXI.TextStyle({
+        const titleText = new PIXI.Text('戦略情報', new PIXI.TextStyle({
             fontFamily: 'Arial',
             fontSize: 18,
             fontWeight: 'bold',
@@ -419,227 +419,132 @@ export class StrategicPhaseScreen {
         }));
         titleText.x = 20;
         titleText.y = 15;
-        this.fleetListPanel.addChild(titleText);
+        this.mainInfoPanel.addChild(titleText);
 
-        // 陣営フィルターボタン
-        this.createFactionFilterButtons();
+        // 艦隊一覧ボタン
+        this.createFleetListButton();
 
-        // 艦隊リスト表示エリア
-        this.fleetListContainer = new PIXI.Container();
-        this.fleetListContainer.x = 10;
-        this.fleetListContainer.y = 70;
-        this.fleetListPanel.addChild(this.fleetListContainer);
+        // 情報表示エリア
+        this.createInfoDisplayArea();
 
-        // スクロール可能エリアのマスク
-        const maskArea = new PIXI.Graphics();
-        maskArea.rect(10, 70, 460, 400);
-        maskArea.fill(0xFFFFFF);
-        this.fleetListPanel.addChild(maskArea);
-        this.fleetListContainer.mask = maskArea;
-
-        this.updateFleetList();
-        this.container.addChild(this.fleetListPanel);
+        this.container.addChild(this.mainInfoPanel);
     }
 
-    createFactionFilterButtons() {
-        // 陣営フィルターボタン
-        const filterContainer = new PIXI.Container();
-        filterContainer.x = 20;
-        filterContainer.y = 45;
-
-        this.currentFleetFilter = 'all'; // 'all', 'alliance', 'empire'
-
-        // 全て表示ボタン
-        const allButton = this.createFilterButton('全て', 'all', 0);
-        filterContainer.addChild(allButton);
-
-        // 自由連邦ボタン
-        const allianceButton = this.createFilterButton('連邦', 'alliance', 60);
-        filterContainer.addChild(allianceButton);
-
-        // 銀河帝国ボタン
-        const empireButton = this.createFilterButton('帝国', 'empire', 110);
-        filterContainer.addChild(empireButton);
-
-        this.fleetListPanel.addChild(filterContainer);
-    }
-
-    createFilterButton(label, filter, x) {
+    createFleetListButton() {
         const button = new PIXI.Container();
-        button.x = x;
+        button.x = 20;
+        button.y = 60;
 
+        // ボタン背景
         const bg = new PIXI.Graphics();
-        bg.roundRect(0, 0, 50, 20, 5);
-        bg.fill(this.currentFleetFilter === filter ? 0x0066CC : 0x333333);
-        bg.stroke({ width: 1, color: 0x666666 });
+        bg.roundRect(0, 0, 300, 50, 8);
+        bg.fill(0x0066CC);
+        bg.stroke({ width: 2, color: 0x0088FF });
         button.addChild(bg);
 
-        const text = new PIXI.Text(label, new PIXI.TextStyle({
+        // ボタンテキスト
+        const text = new PIXI.Text('艦隊一覧', new PIXI.TextStyle({
             fontFamily: 'Arial',
-            fontSize: 10,
-            fill: '#FFFFFF',
-            align: 'center'
+            fontSize: 16,
+            fontWeight: 'bold',
+            fill: '#FFFFFF'
         }));
         text.anchor.set(0.5);
-        text.x = 25;
-        text.y = 10;
+        text.x = 150;
+        text.y = 25;
         button.addChild(text);
+
+        // アイコン
+        const icon = new PIXI.Text('🚢', new PIXI.TextStyle({
+            fontSize: 20,
+            fill: '#FFFFFF'
+        }));
+        icon.x = 30;
+        icon.y = 18;
+        button.addChild(icon);
 
         // インタラクティブ機能
         button.eventMode = 'static';
         button.cursor = 'pointer';
 
-        button.on('pointerdown', () => {
-            this.currentFleetFilter = filter;
-            this.updateFleetList();
-            this.updateFilterButtons();
+        button.on('pointerover', () => {
+            bg.tint = 0xCCCCCC;
         });
 
-        return button;
-    }
-
-    updateFilterButtons() {
-        // フィルターボタンの状態を更新
-        const filterContainer = this.fleetListPanel.children.find(child => 
-            child.children.some(btn => btn.children.length === 2)
-        );
-        
-        if (filterContainer) {
-            filterContainer.children.forEach((button, index) => {
-                const filters = ['all', 'alliance', 'empire'];
-                const bg = button.children[0];
-                bg.clear();
-                bg.roundRect(0, 0, 50, 20, 5);
-                bg.fill(this.currentFleetFilter === filters[index] ? 0x0066CC : 0x333333);
-                bg.stroke({ width: 1, color: 0x666666 });
-            });
-        }
-    }
-
-    updateFleetList() {
-        if (!this.fleetsData || !this.fleetsData.fleets) return;
-
-        // 既存のリストをクリア
-        this.fleetListContainer.removeChildren();
-
-        // プレイヤー陣営に応じたフィルタリング
-        let filteredFleets = this.fleetsData.fleets;
-        
-        if (this.currentFleetFilter === 'alliance') {
-            filteredFleets = filteredFleets.filter(fleet => fleet.faction === 'Alliance');
-        } else if (this.currentFleetFilter === 'empire') {
-            filteredFleets = filteredFleets.filter(fleet => fleet.faction === 'Empire');
-        }
-
-        // 艦隊リストを表示
-        filteredFleets.forEach((fleet, index) => {
-            const fleetItem = this.createFleetListItem(fleet, index);
-            this.fleetListContainer.addChild(fleetItem);
-        });
-    }
-
-    createFleetListItem(fleet, index) {
-        const item = new PIXI.Container();
-        item.y = index * 80;
-
-        // 背景
-        const bg = new PIXI.Graphics();
-        bg.roundRect(0, 0, 460, 75, 5);
-        bg.fill(fleet.faction === 'Alliance' ? 0x001144 : 0x440011);
-        bg.stroke({ width: 1, color: fleet.faction === 'Alliance' ? 0x0066CC : 0xCC0066 });
-        item.addChild(bg);
-
-        // 艦隊名
-        const nameText = new PIXI.Text(fleet.name, new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: 14,
-            fontWeight: 'bold',
-            fill: '#FFFFFF'
-        }));
-        nameText.x = 10;
-        nameText.y = 5;
-        item.addChild(nameText);
-
-        // 艦隊種別
-        const typeText = new PIXI.Text(fleet.type, new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: 11,
-            fill: '#CCCCCC'
-        }));
-        typeText.x = 10;
-        typeText.y = 25;
-        item.addChild(typeText);
-
-        // 艦船数と火力
-        const statsText = new PIXI.Text(`艦船数: ${fleet.shipCount}   火力: ${fleet.totalFirepower}`, new PIXI.TextStyle({
-            fontFamily: 'Arial',
-            fontSize: 10,
-            fill: '#AAAAAA'
-        }));
-        statsText.x = 10;
-        statsText.y = 45;
-        item.addChild(statsText);
-
-        // 司令官情報
-        if (fleet.command && fleet.command.commander && this.admiralsData) {
-            const commander = this.admiralsData.admirals.find(a => a.id === fleet.command.commander);
-            if (commander) {
-                const commanderText = new PIXI.Text(`司令官: ${commander.lastName} ${commander.firstName}`, new PIXI.TextStyle({
-                    fontFamily: 'Arial',
-                    fontSize: 9,
-                    fill: '#00CCFF'
-                }));
-                commanderText.x = 10;
-                commanderText.y = 60;
-                item.addChild(commanderText);
-            }
-        }
-
-        // ステータス表示
-        const statusColor = fleet.status === 'Active' ? 0x00FF00 : 
-                          fleet.status === 'Damaged' ? 0xFFAA00 : 0xFF0000;
-        const statusDot = new PIXI.Graphics();
-        statusDot.circle(0, 0, 5);
-        statusDot.fill(statusColor);
-        statusDot.x = 440;
-        statusDot.y = 15;
-        item.addChild(statusDot);
-
-        // インタラクティブ機能
-        item.eventMode = 'static';
-        item.cursor = 'pointer';
-
-        item.on('pointerover', () => {
-            bg.tint = 0xDDDDDD;
-        });
-
-        item.on('pointerout', () => {
+        button.on('pointerout', () => {
             bg.tint = 0xFFFFFF;
         });
 
-        item.on('pointerdown', () => {
-            this.selectFleet(fleet);
+        button.on('pointerdown', () => {
+            this.openFleetListPage();
         });
 
-        return item;
+        this.mainInfoPanel.addChild(button);
     }
 
-    selectFleet(fleet) {
-        console.log(`艦隊選択: ${fleet.name}`, fleet);
-        // 艦隊選択時の処理（詳細表示、配置変更等）
-        this.showFleetDetails(fleet);
+    createInfoDisplayArea() {
+        // 戦略情報表示エリア
+        const infoContainer = new PIXI.Container();
+        infoContainer.x = 20;
+        infoContainer.y = 130;
+
+        // 戦況概要
+        const situationText = new PIXI.Text('戦況概要', new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 14,
+            fontWeight: 'bold',
+            fill: '#CCCCFF'
+        }));
+        situationText.y = 0;
+        infoContainer.addChild(situationText);
+
+        // プレイヤー陣営表示
+        const factionText = new PIXI.Text(`現在のプレイヤー: ${this.getPlayerName(this.currentPlayer)}`, new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: '#FFFFFF'
+        }));
+        factionText.y = 25;
+        infoContainer.addChild(factionText);
+
+        // 艦隊数表示
+        this.updateFleetCount(infoContainer);
+
+        // 戦略ヒント
+        const hintText = new PIXI.Text('戦略ヒント:\n• 艦隊一覧で戦力を確認\n• 戦闘開始で戦術フェーズへ\n• 資源管理に注意', new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 11,
+            fill: '#AAAAAA',
+            wordWrap: true,
+            wordWrapWidth: 280
+        }));
+        hintText.y = 100;
+        infoContainer.addChild(hintText);
+
+        this.mainInfoPanel.addChild(infoContainer);
     }
 
-    showFleetDetails(fleet) {
-        // 艦隊詳細情報を表示（簡易版）
-        console.log('艦隊詳細:', {
-            name: fleet.name,
-            faction: fleet.faction,
-            type: fleet.type,
-            shipCount: fleet.shipCount,
-            firepower: fleet.totalFirepower,
-            status: fleet.status
-        });
+    updateFleetCount(container) {
+        if (!this.fleetsData || !this.fleetsData.fleets) return;
+
+        const allianceFleets = this.fleetsData.fleets.filter(f => f.faction === 'Alliance').length;
+        const empireFleets = this.fleetsData.fleets.filter(f => f.faction === 'Empire').length;
+
+        const fleetCountText = new PIXI.Text(`艦隊数:\n自由連邦: ${allianceFleets}隻\n銀河帝国: ${empireFleets}隻`, new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: '#FFFFFF'
+        }));
+        fleetCountText.y = 50;
+        container.addChild(fleetCountText);
+    }
+
+    openFleetListPage() {
+        console.log('艦隊一覧ページを開く');
+        // 艦隊一覧専用ページへの遷移処理
+        if (this.onFleetListCallback) {
+            this.onFleetListCallback();
+        }
     }
 
     createActionPanel() {
