@@ -35,6 +35,9 @@ export class Fleet extends PIXI.Container {
         
         // 移動状態管理
         this.isWaitingToMove = false; // 回転完了待ちで移動待機中フラグ
+        this.isMoving = false; // 移動中フラグ
+        this.lastMoveCancelTime = 0; // 最後に移動がキャンセルされた時刻
+        this.moveCancelCooldown = 6000; // 移動キャンセル後のクールダウン時間（6秒）
         
         // ZOC（Zone of Control）システム
         this.zocRange = 200; // ZOC範囲（ピクセル）
@@ -411,10 +414,39 @@ export class Fleet extends PIXI.Container {
         // 移動先が確定したので選択を解除
         this.deselect();
         
+        // 移動開始フラグを設定
+        this.isMoving = true;
+        
         // 選択解除後もゴースト艦隊を表示
         if (this.targetX !== this.x || this.targetY !== this.y) {
             this.drawGhostFleet();
             this.ghostFleet.visible = true;
+        }
+    }
+    
+    // 移動をキャンセルする（交戦時に使用）
+    cancelMove() {
+        const currentTime = Date.now();
+        
+        // クールダウン中は移動キャンセルを無効化
+        if (currentTime - this.lastMoveCancelTime < this.moveCancelCooldown) {
+            const remainingTime = Math.ceil((this.moveCancelCooldown - (currentTime - this.lastMoveCancelTime)) / 1000);
+            console.log(`${this.name}: 移動キャンセルクールダウン中 (残り${remainingTime}秒)`);
+            return;
+        }
+        
+        if (this.isMoving) {
+            console.log(`${this.name}: 交戦により移動をキャンセル`);
+            this.targetX = this.x;
+            this.targetY = this.y;
+            this.isMoving = false;
+            this.isWaitingToMove = false;
+            this.lastMoveCancelTime = currentTime; // キャンセル時刻を記録
+            
+            // ゴースト艦隊を隠す
+            if (this.ghostFleet) {
+                this.ghostFleet.visible = false;
+            }
         }
     }
     
@@ -628,6 +660,10 @@ export class Fleet extends PIXI.Container {
         const currentTime = Date.now();
         this.lastAttackTime = currentTime;
         
+        // 交戦開始時に移動をキャンセル（攻撃側と被攻撃側両方）
+        this.cancelMove();
+        target.cancelMove();
+        
         // ビームエフェクト作成
         if (window.gameState.effects) {
             const beamColor = this.faction === 'alliance' ? 0x4444ff : 0xff4444;
@@ -746,6 +782,9 @@ export class Fleet extends PIXI.Container {
         } else if (!this.isWaitingToMove) {
             this.x = this.targetX;
             this.y = this.targetY;
+            
+            // 移動完了フラグをリセット
+            this.isMoving = false;
             
             // 目標に到達したらゴースト艦隊を隠す
             if (this.ghostFleet && this.ghostFleet.visible) {

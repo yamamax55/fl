@@ -3,6 +3,7 @@ import { Fleet } from './Fleet.js';
 import { GameUI } from './GameUI.js';
 import { Effects } from './Effects.js';
 import { Audio } from './Audio.js';
+import { DatabaseService } from '../database_service.js';
 
 // ゲーム管理クラス
 export class Game {
@@ -24,6 +25,9 @@ export class Game {
             width: 700,  // 1280 - 300(左) - 280(右) = 700
             height: 580  // 720 - 80(上) - 60(下) = 580
         };
+        
+        // データベースサービス初期化
+        this.dbService = new DatabaseService();
         
         // グローバル状態として設定
         window.gameState = this;
@@ -47,6 +51,9 @@ export class Game {
 
         document.body.appendChild(this.app.canvas);
         console.log('PIXI Application初期化完了');
+
+        // データベースサービス初期化
+        await this.dbService.initialize();
 
         // 艦隊作成
         this.createFleets();
@@ -98,6 +105,9 @@ export class Game {
             
             // ゴーストフリートをステージに追加
             fleet.initializeGhostFleet(this.app.stage);
+            
+            // 司令官情報をロード
+            this.loadFleetCommanderInfo(fleet);
         }
         
         // 銀河帝国艦隊（赤色）- ゲームエリア内に配置
@@ -116,6 +126,25 @@ export class Game {
             
             // ゴーストフリートをステージに追加
             fleet.initializeGhostFleet(this.app.stage);
+            
+            // 司令官情報をロード
+            this.loadFleetCommanderInfo(fleet);
+        }
+    }
+    
+    // 艦隊の司令官情報をロード
+    async loadFleetCommanderInfo(fleet) {
+        try {
+            const fleetId = this.dbService.getFleetIdByNumber(fleet.fleetNumber, fleet.faction);
+            if (fleetId) {
+                const commanderInfo = await this.dbService.getFleetCommanderInfo(fleetId);
+                fleet.commanderInfo = commanderInfo;
+                console.log(`${fleet.name}の司令官情報をロードしました:`, commanderInfo);
+            } else {
+                console.warn(`${fleet.name}のfleet IDが見つかりません`);
+            }
+        } catch (error) {
+            console.error(`${fleet.name}の司令官情報ロードエラー:`, error);
         }
     }
     
@@ -134,10 +163,30 @@ export class Game {
                 const selectedFleets = this.fleets.filter(fleet => fleet.isSelected);
                 console.log(`右クリック操作: 選択艦隊数=${selectedFleets.length}, 目標座標=(${x}, ${y})`);
                 
+                // ゲームエリア外クリックの場合は選択解除
+                if (!this.isInGameArea(x, y)) {
+                    console.log('ゲームエリア外クリック: 選択艦隊を解除');
+                    selectedFleets.forEach(fleet => fleet.deselect());
+                    return;
+                }
+                
                 selectedFleets.forEach(fleet => {
                     if (fleet.interactionMode === 'move') {
-                        console.log(`${fleet.name} が (${x}, ${y}) に移動指示`);
-                        fleet.moveTo(x - 20, y - 20); // 中心調整
+                        // 最小移動距離チェック（80px未満は移動しない）
+                        const targetX = x - 10;
+                        const targetY = y - 10;
+                        const distance = Math.sqrt(
+                            Math.pow(targetX - fleet.x, 2) + 
+                            Math.pow(targetY - fleet.y, 2)
+                        );
+                        
+                        if (distance < 80) {
+                            console.log(`${fleet.name}: 移動距離が短すぎます (${Math.round(distance)}px < 80px)`);
+                            return; // 移動せず
+                        }
+                        
+                        console.log(`${fleet.name} が (${x}, ${y}) に移動指示 (距離: ${Math.round(distance)}px)`);
+                        fleet.moveTo(targetX, targetY);
                     } else if (fleet.interactionMode === 'rotate') {
                         console.log(`${fleet.name} が (${x}, ${y}) 方向に回転指示`);
                         fleet.rotateTo(x - 20, y - 20); // 中心調整

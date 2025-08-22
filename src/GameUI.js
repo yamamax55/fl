@@ -76,22 +76,8 @@ export class GameUI {
             fill: 0xcccccc
         });
         
-        // 選択艦隊数表示
-        this.selectionText = new PIXI.Text('選択艦隊: 0', this.textStyle);
-        this.selectionText.x = 20;
-        this.selectionText.y = 20;
-        this.container.addChild(this.selectionText);
-        
-        // 陣営艦隊数表示
-        this.allianceCountText = new PIXI.Text('同盟軍: 0', this.textStyle);
-        this.allianceCountText.x = 300;
-        this.allianceCountText.y = 20;
-        this.container.addChild(this.allianceCountText);
-        
-        this.empireCountText = new PIXI.Text('帝国軍: 0', this.textStyle);
-        this.empireCountText.x = 450;
-        this.empireCountText.y = 20;
-        this.container.addChild(this.empireCountText);
+        // 上部中央ステータスバー初期化
+        this.initializeCenterStatusBar();
         
         // 艦隊ステータス表示コンテナ
         this.fleetStatusContainer = new PIXI.Container();
@@ -101,6 +87,150 @@ export class GameUI {
         
         // UI初期化
         this.initializeUI();
+    }
+    
+    // 上部中央ステータスバー初期化
+    initializeCenterStatusBar() {
+        // 初期戦力の記録（最初の総HP）
+        this.initialAllianceHP = 0;
+        this.initialEmpireHP = 0;
+        this.initialForceRecorded = false;
+        
+        // 中央ステータスバーコンテナ
+        this.centerStatusContainer = new PIXI.Container();
+        this.centerStatusContainer.x = 640; // 画面中央
+        this.centerStatusContainer.y = 15;
+        this.container.addChild(this.centerStatusContainer);
+        
+        // 背景パネル
+        this.statusBg = new PIXI.Graphics();
+        this.statusBg.rect(-250, -5, 500, 50);
+        this.statusBg.fill({ color: 0x1a1a1a, alpha: 0.8 });
+        this.statusBg.stroke({ width: 1, color: 0x555555 });
+        this.centerStatusContainer.addChild(this.statusBg);
+        
+        // 同盟軍バー（左側）
+        this.allianceBarContainer = new PIXI.Container();
+        this.allianceBarContainer.x = -240;
+        this.allianceBarContainer.y = 5;
+        this.centerStatusContainer.addChild(this.allianceBarContainer);
+        
+        // 同盟軍バー背景
+        this.allianceBarBg = new PIXI.Graphics();
+        this.allianceBarBg.rect(0, 0, 200, 20);
+        this.allianceBarBg.fill({ color: 0x333333 });
+        this.allianceBarBg.stroke({ width: 1, color: 0x555555 });
+        this.allianceBarContainer.addChild(this.allianceBarBg);
+        
+        // 同盟軍HPバー
+        this.allianceHPBar = new PIXI.Graphics();
+        this.allianceBarContainer.addChild(this.allianceHPBar);
+        
+        // 同盟軍テキスト
+        this.allianceText = new PIXI.Text('同盟軍: 3', this.textStyle);
+        this.allianceText.x = 5;
+        this.allianceText.y = 25;
+        this.allianceBarContainer.addChild(this.allianceText);
+        
+        // 帝国軍バー（右側）
+        this.empireBarContainer = new PIXI.Container();
+        this.empireBarContainer.x = 40;
+        this.empireBarContainer.y = 5;
+        this.centerStatusContainer.addChild(this.empireBarContainer);
+        
+        // 帝国軍バー背景
+        this.empireBarBg = new PIXI.Graphics();
+        this.empireBarBg.rect(0, 0, 200, 20);
+        this.empireBarBg.fill({ color: 0x333333 });
+        this.empireBarBg.stroke({ width: 1, color: 0x555555 });
+        this.empireBarContainer.addChild(this.empireBarBg);
+        
+        // 帝国軍HPバー
+        this.empireHPBar = new PIXI.Graphics();
+        this.empireBarContainer.addChild(this.empireHPBar);
+        
+        // 帝国軍テキスト
+        this.empireText = new PIXI.Text('帝国軍: 3', this.textStyle);
+        this.empireText.x = 5;
+        this.empireText.y = 25;
+        this.empireBarContainer.addChild(this.empireText);
+        
+        // 中央の「VS」セパレーター
+        this.vsText = new PIXI.Text('VS', {
+            fontFamily: 'Arial',
+            fontSize: 16,
+            fill: 0xffffff,
+            fontWeight: 'bold'
+        });
+        this.vsText.anchor.set(0.5);
+        this.vsText.x = 0;
+        this.vsText.y = 15;
+        this.centerStatusContainer.addChild(this.vsText);
+        
+        // 選択艦隊数表示（左上に移動）
+        this.selectionText = new PIXI.Text('選択艦隊: 0', this.textStyle);
+        this.selectionText.x = 20;
+        this.selectionText.y = 20;
+        this.container.addChild(this.selectionText);
+    }
+    
+    // 中央ステータスバー更新
+    updateCenterStatusBar(allianceFleets, empireFleets) {
+        // 初期戦力を記録（ゲーム開始時のみ）
+        if (!this.initialForceRecorded && window.gameState && window.gameState.fleets) {
+            const allAllianceFleets = window.gameState.fleets.filter(f => f.faction === 'alliance');
+            const allEmpireFleets = window.gameState.fleets.filter(f => f.faction === 'empire');
+            this.initialAllianceHP = allAllianceFleets.reduce((sum, fleet) => sum + fleet.maxHP, 0);
+            this.initialEmpireHP = allEmpireFleets.reduce((sum, fleet) => sum + fleet.maxHP, 0);
+            this.initialForceRecorded = true;
+        }
+        
+        // 現在のHP合計計算（撃破された艦隊含む全艦隊から）
+        const allAllianceFleets = window.gameState.fleets.filter(f => f.faction === 'alliance');
+        const allEmpireFleets = window.gameState.fleets.filter(f => f.faction === 'empire');
+        const allianceTotalHP = allAllianceFleets.reduce((sum, fleet) => sum + fleet.currentHP, 0);
+        const empireTotalHP = allEmpireFleets.reduce((sum, fleet) => sum + fleet.currentHP, 0);
+        
+        // 初期戦力を基準とした比率計算
+        const allianceRatio = this.initialAllianceHP > 0 ? allianceTotalHP / this.initialAllianceHP : 0;
+        const empireRatio = this.initialEmpireHP > 0 ? empireTotalHP / this.initialEmpireHP : 0;
+        
+        // 同盟軍HPバー更新
+        this.allianceHPBar.clear();
+        if (allianceRatio > 0) {
+            const barWidth = 200 * allianceRatio;
+            this.allianceHPBar.rect(0, 0, barWidth, 20);
+            // グラデーション効果
+            const alpha = Math.max(0.7, allianceRatio);
+            this.allianceHPBar.fill({ color: 0x4a9eff, alpha: alpha });
+        }
+        
+        // 帝国軍HPバー更新
+        this.empireHPBar.clear();
+        if (empireRatio > 0) {
+            const barWidth = 200 * empireRatio;
+            this.empireHPBar.rect(0, 0, barWidth, 20);
+            // グラデーション効果
+            const alpha = Math.max(0.7, empireRatio);
+            this.empireHPBar.fill({ color: 0xff4444, alpha: alpha });
+        }
+        
+        // テキスト更新
+        this.allianceText.text = `同盟軍 (${Math.round(allianceTotalHP)}HP)`;
+        this.empireText.text = `帝国軍 (${Math.round(empireTotalHP)}HP)`;
+        
+        // 劣勢側の点滅効果（オプション）
+        if (allianceRatio < 0.3 && allianceFleets.length > 0) {
+            this.allianceBarContainer.alpha = 0.5 + 0.5 * Math.sin(Date.now() * 0.01);
+        } else {
+            this.allianceBarContainer.alpha = 1;
+        }
+        
+        if (empireRatio < 0.3 && empireFleets.length > 0) {
+            this.empireBarContainer.alpha = 0.5 + 0.5 * Math.sin(Date.now() * 0.01);
+        } else {
+            this.empireBarContainer.alpha = 1;
+        }
     }
     
     // UI初期化
@@ -194,6 +324,9 @@ export class GameUI {
         const stopBtn = this.createButton('停止', startX + 220, buttonY, buttonWidth, buttonHeight, 0xaa4444);
         stopBtn.button.on('pointerdown', () => this.stopAllSelected());
         this.bottomPanel.addChild(stopBtn.container);
+        
+        // ゲーム制御ボタン
+        this.createGameControlButtons();
     }
     
     // ボタン作成ヘルパー
@@ -274,16 +407,84 @@ export class GameUI {
         });
     }
     
+    // ゲーム制御ボタン作成
+    createGameControlButtons() {
+        const buttonWidth = 80;
+        const buttonHeight = 35;
+        const buttonY = 12;
+        const startX = 850;
+        
+        // 一時停止ボタン
+        this.pauseBtn = this.createButton('一時停止', startX, buttonY, buttonWidth, buttonHeight, 0x666666);
+        this.pauseBtn.button.on('pointerdown', () => this.togglePause());
+        this.bottomPanel.addChild(this.pauseBtn.container);
+        
+        // 速度変更ボタン
+        this.speedBtn = this.createButton('1x', startX + 90, buttonY, 60, buttonHeight, 0x444444);
+        this.speedBtn.button.on('pointerdown', () => this.changeSpeed());
+        this.bottomPanel.addChild(this.speedBtn.container);
+        
+        // ゲーム状態
+        this.isPaused = false;
+        this.gameSpeed = 1;
+    }
+    
+    // 一時停止トグル
+    togglePause() {
+        const ticker = window.gameState.app.ticker;
+        
+        if (this.isPaused) {
+            ticker.start();
+            this.pauseBtn.text.text = '一時停止';
+            this.pauseBtn.button.clear();
+            this.pauseBtn.button.rect(0, 0, 80, 35);
+            this.pauseBtn.button.fill(0x666666);
+            this.pauseBtn.button.stroke({ width: 1, color: 0xffffff, alpha: 0.3 });
+            this.isPaused = false;
+            console.log('ゲーム再開');
+        } else {
+            ticker.stop();
+            this.pauseBtn.text.text = '再開';
+            this.pauseBtn.button.clear();
+            this.pauseBtn.button.rect(0, 0, 80, 35);
+            this.pauseBtn.button.fill(0xaa4444);
+            this.pauseBtn.button.stroke({ width: 1, color: 0xffffff, alpha: 0.3 });
+            this.isPaused = true;
+            console.log('ゲーム一時停止');
+        }
+    }
+    
+    // 速度変更
+    changeSpeed() {
+        const ticker = window.gameState.app.ticker;
+        
+        if (this.gameSpeed === 1) {
+            this.gameSpeed = 2;
+            ticker.speed = 2;
+            this.speedBtn.text.text = '2x';
+        } else if (this.gameSpeed === 2) {
+            this.gameSpeed = 0.5;
+            ticker.speed = 0.5;
+            this.speedBtn.text.text = '0.5x';
+        } else {
+            this.gameSpeed = 1;
+            ticker.speed = 1;
+            this.speedBtn.text.text = '1x';
+        }
+        
+        console.log(`ゲーム速度変更: ${this.gameSpeed}x`);
+    }
+    
     update() {
         const selectedFleets = window.gameState.fleets.filter(fleet => fleet.isSelected);
         this.selectionText.text = `選択艦隊: ${selectedFleets.length}`;
         
-        // 各陣営の残存艦隊数を更新
+        // 各陣営の残存艦隊数とHP合計を更新
         const allianceFleets = window.gameState.fleets.filter(f => f.faction === 'alliance' && f.currentHP > 0);
         const empireFleets = window.gameState.fleets.filter(f => f.faction === 'empire' && f.currentHP > 0);
         
-        this.allianceCountText.text = `同盟軍: ${allianceFleets.length}`;
-        this.empireCountText.text = `帝国軍: ${empireFleets.length}`;
+        // 中央ステータスバーを更新
+        this.updateCenterStatusBar(allianceFleets, empireFleets);
         
         // 勝利条件チェック（ゲーム終了していない場合のみ）
         if (!this.gameEnded) {
@@ -345,6 +546,28 @@ export class GameUI {
             
             if (fleet.targetX !== fleet.x || fleet.targetY !== fleet.y) {
                 details.push(`目標: (${Math.round(fleet.targetX)}, ${Math.round(fleet.targetY)})`);
+            }
+            
+            // 司令官情報を追加
+            if (fleet.commanderInfo) {
+                details.push('');
+                details.push('=== 指揮系統 ===');
+                if (fleet.commanderInfo.commander_last_name) {
+                    details.push(`司令官: ${fleet.commanderInfo.commander_rank || ''} ${fleet.commanderInfo.commander_last_name} ${fleet.commanderInfo.commander_first_name} (${fleet.commanderInfo.commander_age}歳)`);
+                }
+                if (fleet.commanderInfo.vice_last_name) {
+                    details.push(`副司令官: ${fleet.commanderInfo.vice_rank || ''} ${fleet.commanderInfo.vice_last_name} ${fleet.commanderInfo.vice_first_name} (${fleet.commanderInfo.vice_age}歳)`);
+                }
+                if (fleet.commanderInfo.staff_last_name) {
+                    details.push(`参謀: ${fleet.commanderInfo.staff_rank || ''} ${fleet.commanderInfo.staff_last_name} ${fleet.commanderInfo.staff_first_name} (${fleet.commanderInfo.staff_age}歳)`);
+                }
+                if (!fleet.commanderInfo.commander_last_name && !fleet.commanderInfo.vice_last_name && !fleet.commanderInfo.staff_last_name) {
+                    details.push('指揮官未配属');
+                }
+            } else {
+                details.push('');
+                details.push('=== 指揮系統 ===');
+                details.push('データベース接続エラー');
             }
             
             details.forEach(detail => {
