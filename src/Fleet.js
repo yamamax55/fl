@@ -44,6 +44,13 @@ export class Fleet extends PIXI.Container {
         this.lastMoveCancelTime = 0; // 最後に移動がキャンセルされた時刻
         this.moveCancelCooldown = 6000; // 移動キャンセル後のクールダウン時間（6秒）
         
+        // 直接移動（ドラッグ&ドロップ）システム
+        this.isDragging = false; // ドラッグ中フラグ
+        this.dragStartX = 0; // ドラッグ開始X座標
+        this.dragStartY = 0; // ドラッグ開始Y座標
+        this.isDirectMoving = false; // 直接移動中フラグ（回転なし）
+        this.directMoveSpeed = 0.8; // 直接移動時の速度倍率（通常より遅い）
+        
         // ZOC（Zone of Control）システム
         this.zocRange = 200; // ZOC範囲（ピクセル）
         this.zocTarget = null; // ZOC内の追跡対象
@@ -149,6 +156,9 @@ export class Fleet extends PIXI.Container {
         
         // イベントリスナー
         this.on('pointerdown', this.onPointerDown.bind(this));
+        this.on('pointermove', this.onPointerMove.bind(this));
+        this.on('pointerup', this.onPointerUp.bind(this));
+        this.on('pointerupoutside', this.onPointerUp.bind(this));
     }
     
     // ゲームステージにゴーストフリートを追加
@@ -369,26 +379,6 @@ export class Fleet extends PIXI.Container {
         this.hpBar.fill(color);
     }
     
-    // クリック処理
-    onPointerDown(event) {
-        // 左クリックで選択とモード設定（同盟艦隊のみ）
-        if (event.button === 0 && this.faction === 'alliance') {
-            const currentTime = Date.now();
-            const timeSinceLastClick = currentTime - this.lastClickTime;
-            
-            if (timeSinceLastClick < this.doubleClickDelay && this.isSelected) {
-                // ダブルクリック: 回転モード
-                this.setRotationMode();
-            } else {
-                // シングルクリック: 選択して移動モード
-                this.select();
-                this.setMoveMode();
-            }
-            
-            this.lastClickTime = currentTime;
-        }
-        event.stopPropagation();
-    }
     
     // 選択状態にする
     select() {
@@ -890,8 +880,13 @@ export class Fleet extends PIXI.Container {
             const directionY = dy / distance;
             const oldX = this.x;
             const oldY = this.y;
-            this.x += directionX * this.moveSpeed;
-            this.y += directionY * this.moveSpeed;
+            
+            // 直接移動時は速度を調整
+            const currentMoveSpeed = this.isDirectMoving ? 
+                this.moveSpeed * this.directMoveSpeed : this.moveSpeed;
+            
+            this.x += directionX * currentMoveSpeed;
+            this.y += directionY * currentMoveSpeed;
             
             // ゴースト艦隊の位置を移動に合わせて更新
             this.updateGhostPosition();
@@ -901,8 +896,8 @@ export class Fleet extends PIXI.Container {
                 console.log(`${this.name} 移動中: (${Math.round(oldX)},${Math.round(oldY)}) -> (${Math.round(this.x)},${Math.round(this.y)}) 目標:(${Math.round(this.targetX)},${Math.round(this.targetY)})`);
             }
             
-            // 画面内で回転モードでない場合のみ向きを詳細更新
-            if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating) {
+            // 画面内で回転モードでない場合、かつ直接移動中でない場合のみ向きを詳細更新
+            if (onScreen && this.interactionMode !== 'rotate' && !this.isRotating && !this.isDirectMoving) {
                 this.updateFacing(this.targetX, this.targetY);
             }
         } else if (!this.isWaitingToMove) {
@@ -911,6 +906,7 @@ export class Fleet extends PIXI.Container {
             
             // 移動完了フラグをリセット
             this.isMoving = false;
+            this.isDirectMoving = false; // 直接移動フラグもリセット
             
             // 目標に到達したらゴースト艦隊を隠す
             if (this.ghostFleet && this.ghostFleet.visible) {
@@ -932,5 +928,122 @@ export class Fleet extends PIXI.Container {
             }
             this.attack(target);
         }
+    }
+    
+    // ポインターダウン処理
+    onPointerDown(event) {
+        if (event.button === 0 && this.faction === 'alliance') { // 左クリック - 艦隊選択（同盟艦隊のみ）
+            const currentTime = Date.now();
+            const timeSinceLastClick = currentTime - (this.lastClickTime || 0);
+            this.lastClickTime = currentTime;
+            
+            if (timeSinceLastClick < this.doubleClickDelay && this.isSelected) {
+                // ダブルクリック: 回転モード
+                this.setRotationMode();
+            } else {
+                // シングルクリック: 選択して移動モード
+                this.select();
+                this.setMoveMode();
+            }
+            
+            event.stopPropagation();
+            console.log(`${this.name}: 選択されました (モード: ${this.interactionMode})`);
+        } else if (event.button === 2 && this.isSelected) { // 右クリック - ドラッグ開始
+            event.stopPropagation();
+            this.isDragging = true;
+            this.dragStartX = event.global.x;
+            this.dragStartY = event.global.y;
+            
+            // ドラッグ開始時にゴースト艦隊を表示
+            if (this.ghostFleet) {
+                this.ghostFleet.visible = true;
+                this.ghostFleet.x = this.x;
+                this.ghostFleet.y = this.y;
+                this.ghostFleet.rotation = this.facing; // 現在の向きを維持
+            }
+            
+            console.log(`${this.name}: 右クリックドラッグ開始`);
+        }
+    }
+    
+    // ドラッグ中の処理
+    onPointerMove(event) {
+        if (this.isDragging && this.isSelected) {
+            const currentX = event.global.x;
+            const currentY = event.global.y;
+            
+            // ゲームエリア内に制限
+            const gameArea = window.gameState?.gameArea;
+            if (gameArea) {
+                const margin = 30;
+                const constrainedX = Math.max(gameArea.x + margin, 
+                                    Math.min(gameArea.x + gameArea.width - margin, currentX));
+                const constrainedY = Math.max(gameArea.y + margin, 
+                                    Math.min(gameArea.y + gameArea.height - margin, currentY));
+                
+                // ゴースト艦隊の位置を更新
+                if (this.ghostFleet) {
+                    this.ghostFleet.x = constrainedX;
+                    this.ghostFleet.y = constrainedY;
+                    // 向きは変更せず現在の向きを維持
+                }
+            }
+        }
+    }
+    
+    // ドラッグ終了
+    onPointerUp(event) {
+        if (this.isDragging && this.isSelected) {
+            const endX = event.global.x;
+            const endY = event.global.y;
+            const dragDistance = Math.sqrt(
+                Math.pow(endX - this.dragStartX, 2) + 
+                Math.pow(endY - this.dragStartY, 2)
+            );
+            
+            // 最小ドラッグ距離をチェック（誤操作防止）
+            if (dragDistance >= 20) {
+                // ゲームエリア内に制限
+                const gameArea = window.gameState?.gameArea;
+                if (gameArea) {
+                    const margin = 30;
+                    const constrainedX = Math.max(gameArea.x + margin, 
+                                        Math.min(gameArea.x + gameArea.width - margin, endX));
+                    const constrainedY = Math.max(gameArea.y + margin, 
+                                        Math.min(gameArea.y + gameArea.height - margin, endY));
+                    
+                    // 直接移動を実行（回転なし）
+                    this.directMoveTo(constrainedX, constrainedY);
+                    console.log(`${this.name}: 直接移動指示 -> (${Math.round(constrainedX)}, ${Math.round(constrainedY)})`);
+                }
+            } else {
+                // ドラッグ距離が短い場合はゴースト艦隊を隠す
+                if (this.ghostFleet) {
+                    this.ghostFleet.visible = false;
+                }
+            }
+            
+            this.isDragging = false;
+        }
+    }
+    
+    // 直接移動（回転なし）
+    directMoveTo(x, y) {
+        this.targetX = x;
+        this.targetY = y;
+        this.isDirectMoving = true;
+        this.isWaitingToMove = false; // 回転待機をスキップ
+        this.isMoving = true;
+        
+        // ゴースト艦隊の最終位置を設定
+        if (this.ghostFleet) {
+            this.ghostFleet.x = x;
+            this.ghostFleet.y = y;
+            this.ghostFleet.rotation = this.facing; // 現在の向きを維持
+            this.ghostFleet.visible = true;
+        }
+        
+        // 選択状態を解除
+        this.deselect();
     }
 }
