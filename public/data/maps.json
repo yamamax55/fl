@@ -220,55 +220,55 @@
   "terrainTypes": {
     "asteroid_field": {
       "name": "小惑星帯",
-      "color": 0x8B4513,
+      "color": "0x8B4513",
       "alpha": 0.4,
       "description": "移動速度と射程が低下"
     },
     "fortress_shield": {
       "name": "要塞シールド",
-      "color": 0x0066FF,
+      "color": "0x0066FF",
       "alpha": 0.3,
       "description": "防御力向上、移動速度低下"
     },
     "energy_field": {
       "name": "エネルギー場",
-      "color": 0xFF6600,
+      "color": "0xFF6600",
       "alpha": 0.25,
       "description": "攻撃力低下、エネルギー消耗"
     },
     "dense_gas": {
       "name": "濃密ガス雲",
-      "color": 0x9966CC,
+      "color": "0x9966CC",
       "alpha": 0.5,
       "description": "射程低下、隠密性向上"
     },
     "light_gas": {
       "name": "薄いガス雲",
-      "color": 0xAA88DD,
+      "color": "0xAA88DD",
       "alpha": 0.3,
       "description": "射程わずか低下、隠密性向上"
     },
     "debris_field": {
       "name": "デブリフィールド",
-      "color": 0x666666,
+      "color": "0x666666",
       "alpha": 0.4,
       "description": "移動速度低下、防御力向上"
     },
     "gravity_core": {
       "name": "重力コア",
-      "color": 0x000080,
+      "color": "0x000080",
       "alpha": 0.6,
       "description": "移動大幅低下、攻撃力大幅向上"
     },
     "gravity_medium": {
       "name": "重力場（中）",
-      "color": 0x000080,
+      "color": "0x000080",
       "alpha": 0.4,
       "description": "移動速度低下、攻撃力向上"
     },
     "gravity_light": {
       "name": "重力場（弱）",
-      "color": 0x000080,
+      "color": "0x000080",
       "alpha": 0.2,
       "description": "移動速度わずか低下、攻撃力わずか向上"
     }
@@ -276,27 +276,27 @@
   "obstacleTypes": {
     "large_asteroid": {
       "name": "大型小惑星",
-      "color": 0x8B4513,
+      "color": "0x8B4513",
       "description": "通行不可の巨大な小惑星"
     },
     "space_fortress": {
       "name": "宇宙要塞",
-      "color": 0x444444,
+      "color": "0x444444",
       "description": "巨大な軍事施設"
     },
     "defense_platform": {
       "name": "防衛プラットフォーム",
-      "color": 0x666666,
+      "color": "0x666666",
       "description": "自動防衛システム"
     },
     "ship_wreckage": {
       "name": "艦船の残骸",
-      "color": 0x555555,
+      "color": "0x555555",
       "description": "破壊された戦艦の残骸"
     },
     "gravity_anomaly": {
       "name": "重力異常点",
-      "color": 0x000040,
+      "color": "0x000040",
       "description": "強力な重力歪み"
     }
   }

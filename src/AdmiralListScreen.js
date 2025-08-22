@@ -98,7 +98,7 @@ export class AdmiralListScreen {
             align: 'center'
         });
 
-        const subtitle = new PIXI.Text('Admiral Database - 銀河英雄伝説', subtitleStyle);
+        const subtitle = new PIXI.Text('Admiral Database - Galaxy RTS', subtitleStyle);
         subtitle.anchor.set(0.5, 0);
         subtitle.x = this.app.screen.width / 2;
         subtitle.y = 85;

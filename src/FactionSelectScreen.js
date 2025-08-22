@@ -80,17 +80,17 @@ export class FactionSelectScreen extends PIXI.Container {
     createFactionCards() {
         this.factionCards = [];
         
-        // 自由惑星同盟カード
+        // 自由連邦カード
         const allianceCard = this.createFactionCard({
             faction: 'alliance',
-            name: '自由惑星同盟',
+            name: '自由連邦',
             description: [
-                '民主主義を掲げる自由惑星同盟',
+                '民主主義を掲げる自由連邦',
                 '',
                 '特徴:',
                 '• 防御的戦術に優れる',
-                '• ヤン・ウェンリーの戦術指揮',
-                '• イゼルローン要塞の防衛力',
+                '• 戦術的多様性と柔軟性',
+                '• フロンティア要塞の防衛力',
                 '• 個人の自由と民主的判断'
             ],
             color: 0x0066cc,
@@ -103,11 +103,11 @@ export class FactionSelectScreen extends PIXI.Container {
             faction: 'empire',
             name: '銀河帝国',
             description: [
-                'ラインハルト率いる銀河帝国',
+                '強力な統一帝国',
                 '',
                 '特徴:',
                 '• 攻撃的戦術に優れる',
-                '• 双璧の名将たち',
+                '• 精鋭艦隊指揮官たち',
                 '• 圧倒的な艦隊戦力',
                 '• 規律と統制による組織力'
             ],

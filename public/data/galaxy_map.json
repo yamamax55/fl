@@ -1,0 +1,389 @@
+{
+  "territories": [
+    {
+      "id": 1,
+      "name": "コア首都星系",
+      "type": "capital",
+      "x": 400,
+      "y": 200,
+      "owner": "federation",
+      "resources": {
+        "funds": 5000,
+        "personnel": 800,
+        "materials": 400
+      },
+      "description": "連邦政府の中心拠点",
+      "strategicValue": 10,
+      "defenseLevel": 8
+    },
+    {
+      "id": 2,
+      "name": "エンパイア皇都",
+      "type": "capital",
+      "x": 880,
+      "y": 300,
+      "owner": "empire",
+      "resources": {
+        "funds": 6000,
+        "personnel": 1000,
+        "materials": 500
+      },
+      "description": "帝国の統治中枢",
+      "strategicValue": 10,
+      "defenseLevel": 9
+    },
+    {
+      "id": 3,
+      "name": "フロンティア要塞",
+      "type": "fortress",
+      "x": 200,
+      "y": 150,
+      "owner": "federation",
+      "resources": {
+        "funds": 2000,
+        "personnel": 400,
+        "materials": 300
+      },
+      "description": "辺境防衛の要衝",
+      "strategicValue": 7,
+      "defenseLevel": 9
+    },
+    {
+      "id": 4,
+      "name": "ガーディアン要塞",
+      "type": "fortress",
+      "x": 1080,
+      "y": 180,
+      "owner": "empire",
+      "resources": {
+        "funds": 2500,
+        "personnel": 500,
+        "materials": 350
+      },
+      "description": "帝国東部防衛拠点",
+      "strategicValue": 7,
+      "defenseLevel": 8
+    },
+    {
+      "id": 5,
+      "name": "ミネラル惑星",
+      "type": "planet",
+      "x": 300,
+      "y": 350,
+      "owner": "federation",
+      "resources": {
+        "funds": 1500,
+        "personnel": 200,
+        "materials": 800
+      },
+      "description": "豊富な鉱物資源を産出",
+      "strategicValue": 6,
+      "defenseLevel": 4
+    },
+    {
+      "id": 6,
+      "name": "インダストリア工業惑星",
+      "type": "planet",
+      "x": 980,
+      "y": 420,
+      "owner": "empire",
+      "resources": {
+        "funds": 2000,
+        "personnel": 300,
+        "materials": 600
+      },
+      "description": "帝国の主要工業地帯",
+      "strategicValue": 6,
+      "defenseLevel": 5
+    },
+    {
+      "id": 7,
+      "name": "トレード・ハブ",
+      "type": "trade_center",
+      "x": 640,
+      "y": 280,
+      "owner": "neutral",
+      "resources": {
+        "funds": 4000,
+        "personnel": 150,
+        "materials": 200
+      },
+      "description": "銀河系最大の商業中継点",
+      "strategicValue": 8,
+      "defenseLevel": 3
+    },
+    {
+      "id": 8,
+      "name": "アグリ農業惑星",
+      "type": "planet",
+      "x": 150,
+      "y": 400,
+      "owner": "federation",
+      "resources": {
+        "funds": 1000,
+        "personnel": 600,
+        "materials": 150
+      },
+      "description": "食料供給の要となる農業惑星",
+      "strategicValue": 5,
+      "defenseLevel": 2
+    },
+    {
+      "id": 9,
+      "name": "リサーチ学術都市",
+      "type": "research",
+      "x": 800,
+      "y": 120,
+      "owner": "empire",
+      "resources": {
+        "funds": 1800,
+        "personnel": 400,
+        "materials": 250
+      },
+      "description": "先端技術開発の中心地",
+      "strategicValue": 7,
+      "defenseLevel": 6
+    },
+    {
+      "id": 10,
+      "name": "クリスタル採掘基地",
+      "type": "mining",
+      "x": 500,
+      "y": 450,
+      "owner": "neutral",
+      "resources": {
+        "funds": 800,
+        "personnel": 100,
+        "materials": 900
+      },
+      "description": "希少エネルギー結晶の採掘拠点",
+      "strategicValue": 6,
+      "defenseLevel": 1
+    }
+  ],
+  "routes": [
+    {
+      "id": 1,
+      "from": 1,
+      "to": 3,
+      "distance": 5,
+      "type": "hyperspace_lane",
+      "security": "high"
+    },
+    {
+      "id": 2,
+      "from": 1,
+      "to": 7,
+      "distance": 3,
+      "type": "hyperspace_lane",
+      "security": "high"
+    },
+    {
+      "id": 3,
+      "from": 1,
+      "to": 5,
+      "distance": 4,
+      "type": "standard_route",
+      "security": "medium"
+    },
+    {
+      "id": 4,
+      "from": 2,
+      "to": 4,
+      "distance": 4,
+      "type": "hyperspace_lane",
+      "security": "high"
+    },
+    {
+      "id": 5,
+      "from": 2,
+      "to": 7,
+      "distance": 3,
+      "type": "hyperspace_lane",
+      "security": "high"
+    },
+    {
+      "id": 6,
+      "from": 2,
+      "to": 6,
+      "distance": 3,
+      "type": "standard_route",
+      "security": "medium"
+    },
+    {
+      "id": 7,
+      "from": 2,
+      "to": 9,
+      "distance": 2,
+      "type": "standard_route",
+      "security": "high"
+    },
+    {
+      "id": 8,
+      "from": 3,
+      "to": 8,
+      "distance": 3,
+      "type": "standard_route",
+      "security": "low"
+    },
+    {
+      "id": 9,
+      "from": 3,
+      "to": 5,
+      "distance": 2,
+      "type": "standard_route",
+      "security": "medium"
+    },
+    {
+      "id": 10,
+      "from": 4,
+      "to": 9,
+      "distance": 3,
+      "type": "standard_route",
+      "security": "medium"
+    },
+    {
+      "id": 11,
+      "from": 5,
+      "to": 8,
+      "distance": 2,
+      "type": "standard_route",
+      "security": "low"
+    },
+    {
+      "id": 12,
+      "from": 5,
+      "to": 10,
+      "distance": 4,
+      "type": "mining_route",
+      "security": "low"
+    },
+    {
+      "id": 13,
+      "from": 6,
+      "to": 10,
+      "distance": 3,
+      "type": "standard_route",
+      "security": "medium"
+    },
+    {
+      "id": 14,
+      "from": 7,
+      "to": 10,
+      "distance": 4,
+      "type": "trade_route",
+      "security": "medium"
+    },
+    {
+      "id": 15,
+      "from": 7,
+      "to": 9,
+      "distance": 3,
+      "type": "trade_route",
+      "security": "high"
+    },
+    {
+      "id": 16,
+      "from": 8,
+      "to": 10,
+      "distance": 5,
+      "type": "supply_route",
+      "security": "low"
+    }
+  ],
+  "factions": {
+    "federation": {
+      "name": "自由連邦",
+      "color": "0x0066CC",
+      "symbol": "★",
+      "description": "民主主義と自由を重んじる連邦国家"
+    },
+    "empire": {
+      "name": "銀河帝国",
+      "color": "0xCC0066",
+      "symbol": "♔",
+      "description": "強力な中央集権による統一帝国"
+    },
+    "neutral": {
+      "name": "中立勢力",
+      "color": "0x888888",
+      "symbol": "◆",
+      "description": "どの陣営にも属さない独立勢力"
+    }
+  },
+  "territoryTypes": {
+    "capital": {
+      "name": "首都",
+      "color": "0xFFD700",
+      "size": 25,
+      "description": "各陣営の政治・軍事の中枢"
+    },
+    "fortress": {
+      "name": "要塞",
+      "color": "0x8B4513",
+      "size": 20,
+      "description": "強固な防御を誇る軍事拠点"
+    },
+    "planet": {
+      "name": "惑星",
+      "color": "0x32CD32",
+      "size": 15,
+      "description": "居住可能な惑星"
+    },
+    "trade_center": {
+      "name": "交易センター",
+      "color": "0x9370DB",
+      "size": 18,
+      "description": "商業活動の中心地"
+    },
+    "research": {
+      "name": "研究施設",
+      "color": "0x00CED1",
+      "size": 16,
+      "description": "技術開発の最前線"
+    },
+    "mining": {
+      "name": "採掘基地",
+      "color": "0xCD853F",
+      "size": 14,
+      "description": "資源採掘の前線基地"
+    }
+  },
+  "routeTypes": {
+    "hyperspace_lane": {
+      "name": "ハイパースペース航路",
+      "color": "0x00FFFF",
+      "width": 3,
+      "style": "solid",
+      "description": "高速移動が可能な主要航路"
+    },
+    "standard_route": {
+      "name": "通常航路",
+      "color": "0xFFFFFF",
+      "width": 2,
+      "style": "solid",
+      "description": "一般的な宇宙航路"
+    },
+    "trade_route": {
+      "name": "通商路",
+      "color": "0xFFD700",
+      "width": 2,
+      "style": "dashed",
+      "description": "商業船団が使用する航路"
+    },
+    "supply_route": {
+      "name": "補給路",
+      "color": "0x90EE90",
+      "width": 1,
+      "style": "dotted",
+      "description": "物資輸送専用の航路"
+    },
+    "mining_route": {
+      "name": "採掘路",
+      "color": "0xDEB887",
+      "width": 1,
+      "style": "dashed",
+      "description": "資源輸送のための航路"
+    }
+  }
+}

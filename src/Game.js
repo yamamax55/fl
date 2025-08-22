@@ -13,6 +13,9 @@ export class Game {
         this.fleets = [];
         this.ui = null;
         this.playerFaction = 'alliance'; // デフォルト陣営（main.jsで上書きされる）
+        this.battleTerritory = null; // 戦略フェーズから渡される戦場情報
+        this.onBattleEndCallback = null; // 戦闘終了コールバック
+        this.battleEnded = false; // 戦闘終了フラグ
         this.dragSelection = {
             isDragging: false,
             startX: 0,
@@ -33,7 +36,7 @@ export class Game {
         
         // マップシステム初期化
         this.mapSystem = null;
-        this.currentMapId = 1; // デフォルトマップ
+        this.currentMapId = 2; // デフォルトマップ（小惑星帯でテスト）
         
         // グローバル状態として設定
         window.gameState = this;
@@ -81,6 +84,12 @@ export class Game {
         // マップシステム初期化
         this.mapSystem = new MapSystem(this.app, this.gameArea);
         await this.mapSystem.loadMapsData();
+        
+        // 戦場情報があれば対応するマップを設定
+        if (this.battleTerritory && this.battleTerritory.mapId) {
+            this.currentMapId = this.battleTerritory.mapId;
+        }
+        
         this.mapSystem.setCurrentMap(this.currentMapId);
         this.mapSystem.createMapContainers(this.app.stage);
 
@@ -448,6 +457,48 @@ export class Game {
             this.updateVisibility(); // 毎フレーム視界更新
             this.ui.update();
             this.effects.update();
+            
+            // 戦闘終了チェック
+            this.checkBattleEnd();
         });
+    }
+    
+    // 戦闘終了コールバック設定
+    setOnBattleEndCallback(callback) {
+        this.onBattleEndCallback = callback;
+    }
+    
+    // 戦闘終了チェック
+    checkBattleEnd() {
+        if (this.battleEnded) return; // 既に戦闘終了済み
+        
+        const allianceFleets = this.fleets.filter(fleet => fleet.faction === 'alliance' && !fleet.isDestroyed);
+        const empireFleets = this.fleets.filter(fleet => fleet.faction === 'empire' && !fleet.isDestroyed);
+        
+        let winner = null;
+        
+        if (allianceFleets.length === 0 && empireFleets.length > 0) {
+            winner = 'empire';
+        } else if (empireFleets.length === 0 && allianceFleets.length > 0) {
+            winner = 'alliance';
+        }
+        
+        if (winner && this.onBattleEndCallback) {
+            this.battleEnded = true; // 戦闘終了フラグを設定
+            // 戦闘結果を作成
+            const battleResult = {
+                winner: winner,
+                survivor: winner === 'alliance' ? allianceFleets.length : empireFleets.length,
+                territory: this.battleTerritory?.name || '戦術戦闘',
+                playerVictory: winner === this.playerFaction
+            };
+            
+            console.log('戦闘終了:', battleResult);
+            
+            // 少し遅延してコールバックを呼び出す
+            setTimeout(() => {
+                this.onBattleEndCallback(battleResult);
+            }, 2000);
+        }
     }
 }

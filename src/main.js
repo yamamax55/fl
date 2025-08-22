@@ -2,17 +2,24 @@ import { Game } from './Game.js';
 import { TitleScreen } from './TitleScreen.js';
 import { FactionSelectScreen } from './FactionSelectScreen.js';
 import { AdmiralListScreen } from './AdmiralListScreen.js';
+import { StrategicPhaseScreen } from './StrategicPhaseScreen.js';
 import admiralsData from '../public/data/admirals.json';
 import * as PIXI from 'pixi.js';
 
 // グローバル状態管理
-let currentScreen = 'title'; // 'title' | 'faction' | 'admirals' | 'game'
+let currentScreen = 'title'; // 'title' | 'faction' | 'admirals' | 'strategic' | 'game'
 let app = null;
 let titleScreen = null;
 let factionSelectScreen = null;
 let admiralListScreen = null;
+let strategicPhaseScreen = null;
 let game = null;
 let selectedFaction = null;
+let gameState = {
+    currentPhase: 'strategic', // 'strategic' | 'tactical'
+    currentPlayer: 'alliance',
+    turn: 1
+};
 
 // エラーハンドリング
 window.addEventListener('error', function(e) {
@@ -123,7 +130,7 @@ async function transitionToFactionSelect() {
             // コールバック設定
             factionSelectScreen.setOnFactionSelectCallback((faction) => {
                 selectedFaction = faction;
-                transitionToGame();
+                transitionToStrategicPhase();
             });
             
             factionSelectScreen.setOnBackCallback(() => {
@@ -143,7 +150,137 @@ async function transitionToFactionSelect() {
     }
 }
 
-// ゲーム画面への遷移
+// 戦略フェーズ画面への遷移
+async function transitionToStrategicPhase() {
+    try {
+        console.log(`戦略フェーズ画面に遷移中... (選択陣営: ${selectedFaction})`);
+        
+        // 陣営選択画面を隠す
+        if (factionSelectScreen) {
+            factionSelectScreen.hide();
+            app.stage.removeChild(factionSelectScreen);
+        }
+        
+        // 戦略フェーズ画面を初期化
+        if (!strategicPhaseScreen) {
+            strategicPhaseScreen = new StrategicPhaseScreen(app);
+            
+            // 非同期初期化を実行
+            await strategicPhaseScreen.init();
+            
+            // 戦術フェーズへの遷移コールバック設定
+            strategicPhaseScreen.setOnBattleCallback((territoryData) => {
+                transitionToTacticalPhase(territoryData);
+            });
+            
+            // 戻るコールバック設定
+            strategicPhaseScreen.setOnBackCallback(() => {
+                returnToTitle();
+            });
+        }
+        
+        // 選択陣営を戦略フェーズ画面に設定
+        strategicPhaseScreen.setPlayerFaction(selectedFaction);
+        
+        app.stage.addChild(strategicPhaseScreen.getContainer());
+        strategicPhaseScreen.show();
+        
+        currentScreen = 'strategic';
+        console.log('戦略フェーズ画面遷移完了');
+        
+    } catch (error) {
+        console.error('戦略フェーズ画面遷移エラー:', error);
+        returnToTitle();
+    }
+}
+
+// 戦術フェーズ（ゲーム画面）への遷移
+async function transitionToTacticalPhase(territoryData) {
+    try {
+        console.log(`戦術フェーズに遷移中... (戦場: ${territoryData?.name || '未定義'})`);
+        
+        // 戦略フェーズ画面を隠す
+        if (strategicPhaseScreen) {
+            strategicPhaseScreen.hide();
+            app.stage.removeChild(strategicPhaseScreen.getContainer());
+        }
+        
+        // ローディング表示
+        const loadingText = new PIXI.Text({
+            text: '戦術フェーズ初期化中...',
+            style: {
+                fontFamily: 'Arial, sans-serif',
+                fontSize: 24,
+                fill: '#ffffff',
+                align: 'center'
+            }
+        });
+        loadingText.anchor.set(0.5);
+        loadingText.x = 640;
+        loadingText.y = 360;
+        app.stage.addChild(loadingText);
+        
+        // ゲーム初期化（選択陣営を渡す）
+        game = new Game();
+        game.app = app;
+        game.playerFaction = selectedFaction;
+        game.battleTerritory = territoryData; // 戦場情報を設定
+        
+        // Game.jsのinit()を呼び出すが、PIXI Application作成部分をスキップ
+        await game.initWithExistingApp();
+        
+        // ローディングテキストを削除
+        app.stage.removeChild(loadingText);
+        
+        // 戦術フェーズ終了後に戦略フェーズに戻るコールバック設定
+        game.setOnBattleEndCallback((result) => {
+            returnToStrategicPhase(result);
+        });
+        
+        currentScreen = 'game';
+        gameState.currentPhase = 'tactical';
+        console.log('戦術フェーズ遷移完了');
+        
+    } catch (error) {
+        console.error('戦術フェーズ遷移エラー:', error);
+        // エラー時は戦略フェーズに戻る
+        returnToStrategicPhase();
+    }
+}
+
+// 戦略フェーズに戻る
+function returnToStrategicPhase(battleResult = null) {
+    try {
+        console.log('戦略フェーズに戻ります', battleResult ? `(戦果: ${battleResult})` : '');
+        
+        // ゲーム画面のクリーンアップ
+        if (game) {
+            app.stage.removeChildren();
+            game = null;
+        }
+        
+        // 戦略フェーズ画面を再表示
+        if (strategicPhaseScreen) {
+            app.stage.addChild(strategicPhaseScreen.getContainer());
+            strategicPhaseScreen.show();
+            
+            // 戦果があれば戦略フェーズ画面に通知
+            if (battleResult) {
+                strategicPhaseScreen.handleBattleResult(battleResult);
+            }
+        }
+        
+        currentScreen = 'strategic';
+        gameState.currentPhase = 'strategic';
+        console.log('戦略フェーズ復帰完了');
+        
+    } catch (error) {
+        console.error('戦略フェーズ復帰エラー:', error);
+        returnToTitle();
+    }
+}
+
+// ゲーム画面への遷移（直接戦術フェーズ開始）
 async function transitionToGame() {
     try {
         console.log(`ゲーム画面に遷移中... (選択陣営: ${selectedFaction})`);
@@ -232,10 +369,20 @@ async function startApp() {
     }
 }
 
-// ESCキーでタイトル画面に戻る機能
+// ESCキーで前の画面に戻る機能
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         if (currentScreen === 'game') {
+            if (gameState.currentPhase === 'tactical') {
+                if (confirm('戦略フェーズに戻りますか？')) {
+                    returnToStrategicPhase();
+                }
+            } else {
+                if (confirm('タイトル画面に戻りますか？')) {
+                    returnToTitle();
+                }
+            }
+        } else if (currentScreen === 'strategic') {
             if (confirm('タイトル画面に戻りますか？')) {
                 returnToTitle();
             }
@@ -261,13 +408,21 @@ function returnToTitle() {
             factionSelectScreen.hide();
         }
         
+        if (strategicPhaseScreen) {
+            strategicPhaseScreen.hide();
+            strategicPhaseScreen = null;
+        }
+        
         if (admiralListScreen) {
             admiralListScreen.destroy();
             admiralListScreen = null;
         }
         
-        // 選択陣営をリセット
+        // 選択陣営とゲーム状態をリセット
         selectedFaction = null;
+        gameState.currentPhase = 'strategic';
+        gameState.currentPlayer = 'alliance';
+        gameState.turn = 1;
         
         // タイトル画面を再表示
         if (titleScreen) {

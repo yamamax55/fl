@@ -68,10 +68,21 @@ export class MapSystem {
     }
 
     renderCurrentMap() {
+        console.log('マップレンダリング開始');
+        
         if (!this.currentMap) {
             console.warn('レンダリングするマップが設定されていません');
             return;
         }
+
+        if (!this.terrainContainer || !this.obstacleContainer) {
+            console.error('マップコンテナが初期化されていません');
+            return;
+        }
+
+        console.log(`マップ「${this.currentMap.name}」をレンダリング中...`);
+        console.log('地形数:', this.currentMap.terrains?.length || 0);
+        console.log('障害物数:', this.currentMap.obstacles?.length || 0);
 
         // 既存の地形と障害物をクリア
         this.clearMap();
@@ -83,20 +94,38 @@ export class MapSystem {
         this.renderObstacles();
 
         console.log(`マップ「${this.currentMap.name}」のレンダリング完了`);
+        console.log('地形コンテナ子要素数:', this.terrainContainer.children.length);
+        console.log('障害物コンテナ子要素数:', this.obstacleContainer.children.length);
     }
 
     renderTerrains() {
-        if (!this.currentMap.terrains || !this.terrainContainer) return;
+        console.log('地形描画開始');
+        
+        if (!this.currentMap.terrains || !this.terrainContainer) {
+            console.log('地形データまたはコンテナが存在しません');
+            return;
+        }
 
-        this.currentMap.terrains.forEach(terrainGroup => {
+        this.currentMap.terrains.forEach((terrainGroup, groupIndex) => {
+            console.log(`地形グループ ${groupIndex}: ${terrainGroup.type}`);
+            
             const terrainType = this.mapData.terrainTypes[terrainGroup.type];
-            if (!terrainType) return;
+            if (!terrainType) {
+                console.warn(`地形タイプが見つかりません: ${terrainGroup.type}`);
+                return;
+            }
 
-            terrainGroup.areas.forEach(area => {
+            terrainGroup.areas.forEach((area, areaIndex) => {
+                console.log(`地形エリア ${areaIndex}:`, area);
+                
                 const terrainGraphic = new PIXI.Graphics();
                 terrainGraphic.rect(area.x, area.y, area.width, area.height);
+                
+                const color = parseInt(terrainType.color);
+                console.log(`色: ${terrainType.color} → ${color}`);
+                
                 terrainGraphic.fill({
-                    color: terrainType.color,
+                    color: color,
                     alpha: terrainType.alpha
                 });
 
@@ -113,8 +142,11 @@ export class MapSystem {
                 };
 
                 this.terrainContainer.addChild(terrainGraphic);
+                console.log('地形グラフィック追加完了');
             });
         });
+        
+        console.log('地形描画完了');
     }
 
     renderObstacles() {
@@ -126,7 +158,7 @@ export class MapSystem {
 
             const obstacleGraphic = new PIXI.Graphics();
             obstacleGraphic.roundRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height, 5);
-            obstacleGraphic.fill(obstacleType.color);
+            obstacleGraphic.fill(parseInt(obstacleType.color));
             obstacleGraphic.stroke({ width: 2, color: 0x222222 });
 
             // 障害物情報を保存

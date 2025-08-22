@@ -83,7 +83,7 @@ export class TitleScreen extends PIXI.Container {
         
         // サブタイトル
         const subtitleText = new PIXI.Text({
-            text: '銀河英雄伝説 - 艦隊戦術シミュレーション',
+            text: '宇宙艦隊戦略シミュレーション',
             style: {
                 fontFamily: 'Arial, sans-serif',
                 fontSize: 24,

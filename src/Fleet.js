@@ -894,8 +894,20 @@ export class Fleet extends PIXI.Container {
             const currentMoveSpeed = this.isDirectMoving ? 
                 this.moveSpeed * this.directMoveSpeed : this.moveSpeed;
             
-            this.x += directionX * currentMoveSpeed;
-            this.y += directionY * currentMoveSpeed;
+            // 新しい位置を計算
+            const newX = this.x + directionX * currentMoveSpeed;
+            const newY = this.y + directionY * currentMoveSpeed;
+            
+            // 障害物チェック（安全な移動）
+            if (this.isPositionSafe(newX, newY)) {
+                this.x = newX;
+                this.y = newY;
+            } else {
+                // 障害物がある場合は移動を停止
+                this.targetX = this.x;
+                this.targetY = this.y;
+                console.log(`${this.name}: 障害物により移動停止`);
+            }
             
             // ゴースト艦隊の位置を移動に合わせて更新
             this.updateGhostPosition();
@@ -1063,16 +1075,20 @@ export class Fleet extends PIXI.Container {
 
     // 地形効果を更新
     updateTerrainEffect() {
-        if (!window.gameState || !window.gameState.mapSystem) {
-            return;
-        }
+        try {
+            if (!window.gameState || !window.gameState.mapSystem) {
+                return;
+            }
 
-        const mapSystem = window.gameState.mapSystem;
-        const terrainEffect = mapSystem.getTerrainEffectAt(this.x, this.y);
-        
-        if (terrainEffect !== this.currentTerrainEffect) {
-            this.currentTerrainEffect = terrainEffect;
-            this.applyTerrainEffect();
+            const mapSystem = window.gameState.mapSystem;
+            const terrainEffect = mapSystem.getTerrainEffectAt(this.x, this.y);
+            
+            if (terrainEffect !== this.currentTerrainEffect) {
+                this.currentTerrainEffect = terrainEffect;
+                this.applyTerrainEffect();
+            }
+        } catch (error) {
+            console.warn('地形効果更新エラー:', error);
         }
     }
 
@@ -1100,9 +1116,11 @@ export class Fleet extends PIXI.Container {
             }
         }
 
-        // 提督能力値による補正を考慮した最終値を計算
-        const admiralMoveSpeedRatio = this.getAdmiralMoveSpeedRatio();
-        this.moveSpeed = this.baseMoveSpeed * admiralMoveSpeedRatio * moveSpeedMultiplier;
+        // 現在の移動速度の基本値を取得（提督能力値を考慮済み）
+        const baseMoveSpeed = this.moveSpeed;
+        
+        // 地形効果による移動速度調整
+        this.moveSpeed = baseMoveSpeed * moveSpeedMultiplier;
         
         // 攻撃力・防御力・射程の更新
         this.terrainAttackMultiplier = attackMultiplier;
@@ -1113,17 +1131,46 @@ export class Fleet extends PIXI.Container {
         this.range = 150 * rangeMultiplier;
     }
 
-    // 地形効果を考慮した攻撃力を取得
+    // 地形効果を考慮した攻撃力を取得（オーバーライド）
     getAttackPower() {
-        const baseAttack = this.getAdmiralAttackPower();
+        const baseAttack = this.attackPower || this.baseAttackPower;
         const terrainMultiplier = this.terrainAttackMultiplier || 1.0;
         return Math.round(baseAttack * terrainMultiplier);
     }
 
-    // 地形効果を考慮した防御力を取得
+    // 地形効果を考慮した防御力を取得（オーバーライド）
     getDefensePower() {
-        const baseDefense = this.getAdmiralDefensePower();
+        const baseDefense = this.defensePower || this.baseDefensePower;
         const terrainMultiplier = this.terrainDefenseMultiplier || 1.0;
         return Math.round(baseDefense * terrainMultiplier);
+    }
+
+    // 指定位置が安全かチェック（障害物回避）
+    isPositionSafe(x, y) {
+        try {
+            // マップシステムが利用可能かチェック
+            if (!window.gameState || !window.gameState.mapSystem) {
+                return true; // マップシステムがない場合は移動を許可
+            }
+
+            const mapSystem = window.gameState.mapSystem;
+            
+            // 障害物との衝突チェック
+            if (mapSystem.hasObstacleAt(x, y, 20, 20)) {
+                return false;
+            }
+
+            // ゲームエリア内かチェック
+            const gameArea = window.gameState.gameArea;
+            if (x < gameArea.x || x > gameArea.x + gameArea.width ||
+                y < gameArea.y || y > gameArea.y + gameArea.height) {
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.warn('位置安全性チェックエラー:', error);
+            return true; // エラー時は移動を許可
+        }
     }
 }
