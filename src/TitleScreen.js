@@ -1,16 +1,21 @@
 import * as PIXI from 'pixi.js';
+import { Audio } from './Audio.js';
 
 export class TitleScreen extends PIXI.Container {
     constructor(app) {
         super();
         this.app = app;
         this.onStartCallback = null;
+        this.onAdmiralsCallback = null;
+        this.audio = null;
+        this.bgmStarted = false;
         
         this.createBackground();
         this.createTitle();
         this.createStars();
         this.createMenu();
         this.startAnimation();
+        this.initAudio();
     }
     
     createBackground() {
@@ -104,6 +109,7 @@ export class TitleScreen extends PIXI.Container {
         // メニューアイテム
         const menuItems = [
             { text: 'ゲーム開始', action: 'start' },
+            { text: '提督一覧', action: 'admirals' },
             { text: '設定', action: 'settings' },
             { text: 'ヘルプ', action: 'help' },
             { text: '終了', action: 'exit' }
@@ -186,6 +192,10 @@ export class TitleScreen extends PIXI.Container {
         
         // クリックイベント
         container.on('pointerdown', () => {
+            // メニューボタンクリック時にBGM開始
+            if (!this.bgmStarted) {
+                this.startBGM();
+            }
             this.handleMenuAction(action);
         });
         
@@ -227,6 +237,12 @@ export class TitleScreen extends PIXI.Container {
                     this.onStartCallback();
                 }
                 break;
+            case 'admirals':
+                console.log('提督一覧画面へ');
+                if (this.onAdmiralsCallback) {
+                    this.onAdmiralsCallback();
+                }
+                break;
             case 'settings':
                 console.log('設定画面（未実装）');
                 break;
@@ -265,11 +281,46 @@ export class TitleScreen extends PIXI.Container {
         
         animate();
     }
+
+    async initAudio() {
+        try {
+            this.audio = new Audio();
+            console.log('Title screen audio system initialized');
+        } catch (error) {
+            console.warn('Title screen audio initialization failed:', error);
+        }
+    }
+
+    async startBGM() {
+        if (!this.audio || this.bgmStarted) return;
+        
+        try {
+            await this.audio.resume();
+            await this.audio.startBGM();
+            this.bgmStarted = true;
+            console.log('Title screen BGM started');
+        } catch (error) {
+            console.warn('Title screen BGM start failed:', error);
+        }
+    }
+
+    stopBGM() {
+        if (this.audio && this.bgmStarted) {
+            this.audio.stopBGM();
+            this.bgmStarted = false;
+            console.log('Title screen BGM stopped');
+        }
+    }
     
     // キーボード操作
     setupKeyboardControls() {
-        document.addEventListener('keydown', (event) => {
+        const keyHandler = (event) => {
             if (!this.visible) return;
+            
+            // 最初のキー入力でBGM開始
+            if (!this.bgmStarted) {
+                this.startBGM();
+            }
             
             switch (event.key) {
                 case 'ArrowUp':
@@ -290,19 +341,43 @@ export class TitleScreen extends PIXI.Container {
                     this.handleMenuAction('exit');
                     break;
             }
-        });
+        };
+        
+        document.addEventListener('keydown', keyHandler);
+        
+        // マウスクリック時もBGM開始
+        const clickHandler = () => {
+            if (!this.bgmStarted && this.visible) {
+                this.startBGM();
+            }
+        };
+        
+        document.addEventListener('click', clickHandler, { once: true });
     }
     
     setOnStartCallback(callback) {
         this.onStartCallback = callback;
     }
     
+    setOnAdmiralsCallback(callback) {
+        this.onAdmiralsCallback = callback;
+    }
+    
     show() {
         this.visible = true;
         this.setupKeyboardControls();
+        
+        // タイトル画面表示時にBGM開始の準備
+        setTimeout(() => {
+            if (!this.bgmStarted) {
+                console.log('タイトル画面表示中 - クリックまたはキー入力でBGMが開始されます');
+            }
+        }, 1000);
     }
     
     hide() {
         this.visible = false;
+        // タイトル画面を隠す時はBGMを停止
+        this.stopBGM();
     }
 }

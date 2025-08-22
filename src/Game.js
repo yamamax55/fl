@@ -93,11 +93,8 @@ export class Game {
         
         // ローディング表示削除はmain.jsで処理
         
-        // オーディオ開始（ユーザー操作後）
-        document.addEventListener('click', () => {
-            this.audio.resume();
-            this.audio.startBGM();
-        }, { once: true });
+        // オーディオシステムは初期化のみ（BGMはタイトル画面で開始）
+        // SFX音声は必要に応じて再生
         
         console.log('Galaxy RTS初期化完了 - Phase 4: UIシステムと演出強化');
     }

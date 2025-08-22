@@ -40,7 +40,7 @@ export class Audio {
             this.masterGainNode.connect(this.audioContext.destination);
             
             this.bgmGainNode = this.audioContext.createGain();
-            this.bgmGainNode.gain.value = 0.2;
+            this.bgmGainNode.gain.value = 0.4;
             this.bgmGainNode.connect(this.masterGainNode);
             
             this.sfxGainNode = this.audioContext.createGain();
@@ -93,6 +93,43 @@ export class Audio {
         if (!this.isInitialized || this.isMuted || this.currentBGM) return;
         
         try {
+            // BGMファイルを読み込み
+            console.log('BGMファイル読み込み開始: /assets/bgm_classic_ravel_bolero.wav');
+            const response = await fetch('/assets/bgm_classic_ravel_bolero.wav');
+            
+            if (!response.ok) {
+                throw new Error(`BGMファイル読み込みエラー: ${response.status} ${response.statusText}`);
+            }
+            
+            console.log('BGMファイル取得成功、デコード開始...');
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            console.log('BGMファイルデコード成功');
+            
+            const playBGM = () => {
+                if (this.isMuted || !this.isInitialized) return;
+                
+                const source = this.audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.loop = true;
+                source.connect(this.bgmGainNode);
+                source.start();
+                
+                this.currentBGM = source;
+            };
+            
+            playBGM();
+            console.log('BGM started (Ravel Bolero)');
+            
+        } catch (error) {
+            console.warn('BGM file load error, falling back to procedural BGM:', error);
+            // フォールバック: 元のプロシージャルBGM
+            this.startProceduralBGM();
+        }
+    }
+
+    startProceduralBGM() {
+        try {
             const playNote = (frequency, startTime, duration) => {
                 const oscillator = this.audioContext.createOscillator();
                 const gainControl = this.audioContext.createGain();
@@ -124,16 +161,22 @@ export class Audio {
             };
             
             createBGMLoop();
-            console.log('BGM started');
+            console.log('Procedural BGM started');
             
         } catch (error) {
-            console.warn('BGM playback error:', error);
+            console.warn('Procedural BGM playback error:', error);
         }
     }
     
     stopBGM() {
         if (this.currentBGM) {
-            clearTimeout(this.currentBGM);
+            if (typeof this.currentBGM.stop === 'function') {
+                // AudioBufferSourceNode の場合
+                this.currentBGM.stop();
+            } else {
+                // setTimeout の場合（プロシージャルBGM）
+                clearTimeout(this.currentBGM);
+            }
             this.currentBGM = null;
             console.log('BGM stopped');
         }

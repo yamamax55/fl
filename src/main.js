@@ -1,13 +1,16 @@
 import { Game } from './Game.js';
 import { TitleScreen } from './TitleScreen.js';
 import { FactionSelectScreen } from './FactionSelectScreen.js';
+import { AdmiralListScreen } from './AdmiralListScreen.js';
+import admiralsData from '../public/data/admirals.json';
 import * as PIXI from 'pixi.js';
 
 // グローバル状態管理
-let currentScreen = 'title'; // 'title' | 'faction' | 'game'
+let currentScreen = 'title'; // 'title' | 'faction' | 'admirals' | 'game'
 let app = null;
 let titleScreen = null;
 let factionSelectScreen = null;
+let admiralListScreen = null;
 let game = null;
 let selectedFaction = null;
 
@@ -55,6 +58,11 @@ async function initTitleScreen() {
             transitionToFactionSelect();
         });
         
+        // 提督一覧画面への遷移コールバック設定
+        titleScreen.setOnAdmiralsCallback(() => {
+            transitionToAdmiralList();
+        });
+        
         app.stage.addChild(titleScreen);
         titleScreen.show();
         
@@ -62,6 +70,38 @@ async function initTitleScreen() {
     } catch (error) {
         console.error('タイトル画面初期化エラー:', error);
         throw error;
+    }
+}
+
+// 提督一覧画面への遷移
+async function transitionToAdmiralList() {
+    try {
+        console.log('提督一覧画面に遷移中...');
+        
+        // タイトル画面を隠す
+        if (titleScreen) {
+            titleScreen.hide();
+            app.stage.removeChild(titleScreen);
+        }
+        
+        // 提督一覧画面を初期化
+        if (!admiralListScreen) {
+            admiralListScreen = new AdmiralListScreen(app, admiralsData);
+            
+            // 戻るコールバック設定
+            admiralListScreen.onBack = () => {
+                returnToTitle();
+            };
+        }
+        
+        app.stage.addChild(admiralListScreen.getContainer());
+        
+        currentScreen = 'admirals';
+        console.log('提督一覧画面遷移完了');
+        
+    } catch (error) {
+        console.error('提督一覧画面遷移エラー:', error);
+        returnToTitle();
     }
 }
 
@@ -199,7 +239,7 @@ document.addEventListener('keydown', (event) => {
             if (confirm('タイトル画面に戻りますか？')) {
                 returnToTitle();
             }
-        } else if (currentScreen === 'faction') {
+        } else if (currentScreen === 'faction' || currentScreen === 'admirals') {
             returnToTitle();
         }
     }
@@ -219,6 +259,11 @@ function returnToTitle() {
         
         if (factionSelectScreen) {
             factionSelectScreen.hide();
+        }
+        
+        if (admiralListScreen) {
+            admiralListScreen.destroy();
+            admiralListScreen = null;
         }
         
         // 選択陣営をリセット
