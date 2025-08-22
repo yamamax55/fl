@@ -45,6 +45,7 @@ export class StrategicPhaseScreen {
         this.createTurnInfoPanel();
         this.createResourcePanel();
         this.createMainInfoPanel();
+        this.createStrategicInfoPanel();
         this.createActionPanel();
         this.createNavigationButtons();
         this.setupEventListeners();
@@ -135,9 +136,9 @@ export class StrategicPhaseScreen {
         this.galaxyMap.x = 200;
         this.galaxyMap.y = 80;
         
-        // 銀河地図背景（フル幅に戻す）
+        // 銀河地図背景（枠内に収まるよう調整）
         const mapBg = new PIXI.Graphics();
-        mapBg.roundRect(0, 0, 700, 480, 10);
+        mapBg.roundRect(0, 0, 600, 480, 10);
         mapBg.fill(0x001133);
         mapBg.stroke({ width: 2, color: 0x0066CC });
         this.galaxyMap.addChild(mapBg);
@@ -400,18 +401,18 @@ export class StrategicPhaseScreen {
 
     createMainInfoPanel() {
         this.mainInfoPanel = new PIXI.Container();
-        this.mainInfoPanel.x = 920;
+        this.mainInfoPanel.x = 820;
         this.mainInfoPanel.y = 80;
 
         // 背景パネル
         const panelBg = new PIXI.Graphics();
-        panelBg.roundRect(0, 0, 340, 480, 10);
+        panelBg.roundRect(0, 0, 440, 480, 10);
         panelBg.fill(0x001122);
         panelBg.stroke({ width: 2, color: 0x0066CC });
         this.mainInfoPanel.addChild(panelBg);
 
         // タイトル
-        const titleText = new PIXI.Text('戦略情報', new PIXI.TextStyle({
+        const titleText = new PIXI.Text('艦隊管理', new PIXI.TextStyle({
             fontFamily: 'Arial',
             fontSize: 18,
             fontWeight: 'bold',
@@ -437,7 +438,7 @@ export class StrategicPhaseScreen {
 
         // ボタン背景
         const bg = new PIXI.Graphics();
-        bg.roundRect(0, 0, 300, 50, 8);
+        bg.roundRect(0, 0, 400, 50, 8);
         bg.fill(0x0066CC);
         bg.stroke({ width: 2, color: 0x0088FF });
         button.addChild(bg);
@@ -450,7 +451,7 @@ export class StrategicPhaseScreen {
             fill: '#FFFFFF'
         }));
         text.anchor.set(0.5);
-        text.x = 150;
+        text.x = 200;
         text.y = 25;
         button.addChild(text);
 
@@ -483,15 +484,60 @@ export class StrategicPhaseScreen {
     }
 
     createInfoDisplayArea() {
-        // 戦略情報表示エリア
+        // 艦隊管理説明エリア
         const infoContainer = new PIXI.Container();
         infoContainer.x = 20;
         infoContainer.y = 130;
 
+        // 説明テキスト
+        const descText = new PIXI.Text('艦隊一覧ボタンをクリックして\n全艦隊の詳細情報を確認できます。\n\n各艦隊の戦力、司令官、配備状況\nなどを管理し、戦略を立てましょう。', new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 12,
+            fill: '#CCCCCC',
+            wordWrap: true,
+            wordWrapWidth: 380
+        }));
+        descText.y = 0;
+        infoContainer.addChild(descText);
+
+        // 簡易艦隊統計
+        this.updateFleetCount(infoContainer);
+
+        this.mainInfoPanel.addChild(infoContainer);
+    }
+
+    createStrategicInfoPanel() {
+        this.strategicInfoPanel = new PIXI.Container();
+        this.strategicInfoPanel.x = 20;
+        this.strategicInfoPanel.y = 320;
+
+        // 背景パネル
+        const panelBg = new PIXI.Graphics();
+        panelBg.roundRect(0, 0, 160, 250, 10);
+        panelBg.fill(0x001122);
+        panelBg.stroke({ width: 2, color: 0x0066CC });
+        this.strategicInfoPanel.addChild(panelBg);
+
+        // タイトル
+        const titleText = new PIXI.Text('戦略情報', new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 16,
+            fontWeight: 'bold',
+            fill: '#FFFFFF'
+        }));
+        titleText.x = 10;
+        titleText.y = 10;
+        this.strategicInfoPanel.addChild(titleText);
+
+        // 情報表示エリア
+        const infoContainer = new PIXI.Container();
+        infoContainer.x = 10;
+        infoContainer.y = 40;
+
         // 戦況概要
         const situationText = new PIXI.Text('戦況概要', new PIXI.TextStyle({
             fontFamily: 'Arial',
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: 'bold',
             fill: '#CCCCFF'
         }));
@@ -499,29 +545,45 @@ export class StrategicPhaseScreen {
         infoContainer.addChild(situationText);
 
         // プレイヤー陣営表示
-        const factionText = new PIXI.Text(`現在のプレイヤー: ${this.getPlayerName(this.currentPlayer)}`, new PIXI.TextStyle({
+        const factionText = new PIXI.Text(`プレイヤー:\n${this.getPlayerName(this.currentPlayer)}`, new PIXI.TextStyle({
             fontFamily: 'Arial',
-            fontSize: 12,
+            fontSize: 10,
             fill: '#FFFFFF'
         }));
-        factionText.y = 25;
+        factionText.y = 20;
         infoContainer.addChild(factionText);
 
         // 艦隊数表示
-        this.updateFleetCount(infoContainer);
+        this.updateStrategicFleetCount(infoContainer);
 
         // 戦略ヒント
-        const hintText = new PIXI.Text('戦略ヒント:\n• 艦隊一覧で戦力を確認\n• 戦闘開始で戦術フェーズへ\n• 資源管理に注意', new PIXI.TextStyle({
+        const hintText = new PIXI.Text('戦略ヒント:\n• 右側艦隊一覧で戦力確認\n• 戦闘開始で戦術フェーズ\n• 資源管理に注意\n• 外交も重要な要素', new PIXI.TextStyle({
             fontFamily: 'Arial',
-            fontSize: 11,
+            fontSize: 9,
             fill: '#AAAAAA',
             wordWrap: true,
-            wordWrapWidth: 280
+            wordWrapWidth: 135
         }));
-        hintText.y = 100;
+        hintText.y = 120;
         infoContainer.addChild(hintText);
 
-        this.mainInfoPanel.addChild(infoContainer);
+        this.strategicInfoPanel.addChild(infoContainer);
+        this.container.addChild(this.strategicInfoPanel);
+    }
+
+    updateStrategicFleetCount(container) {
+        if (!this.fleetsData || !this.fleetsData.fleets) return;
+
+        const allianceFleets = this.fleetsData.fleets.filter(f => f.faction === 'Alliance').length;
+        const empireFleets = this.fleetsData.fleets.filter(f => f.faction === 'Empire').length;
+
+        const fleetCountText = new PIXI.Text(`艦隊数:\n連邦: ${allianceFleets}隻\n帝国: ${empireFleets}隻`, new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 10,
+            fill: '#FFFFFF'
+        }));
+        fleetCountText.y = 55;
+        container.addChild(fleetCountText);
     }
 
     updateFleetCount(container) {
@@ -535,7 +597,7 @@ export class StrategicPhaseScreen {
             fontSize: 12,
             fill: '#FFFFFF'
         }));
-        fleetCountText.y = 50;
+        fleetCountText.y = 120;
         container.addChild(fleetCountText);
     }
 
@@ -550,11 +612,11 @@ export class StrategicPhaseScreen {
     createActionPanel() {
         this.actionPanel = new PIXI.Container();
         this.actionPanel.x = 20;
-        this.actionPanel.y = 320;
+        this.actionPanel.y = 580;
 
         // パネル背景
         const bg = new PIXI.Graphics();
-        bg.roundRect(0, 0, 160, 240, 8);
+        bg.roundRect(0, 0, 160, 140, 8);
         bg.fill(0x112233);
         bg.stroke({ width: 2, color: 0x0088CC });
         this.actionPanel.addChild(bg);

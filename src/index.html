@@ -3,17 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galaxy RTS - 宇宙艦隊戦略シミュレーション</title>
+    <title>Galaxy RTS - Space Fleet Strategy Simulation</title>
     <link rel="icon" type="image/png" href="/assets/a34e4b9e-222c-4ced-8fad-8b3ea1ea6328.png">
     <link rel="shortcut icon" type="image/png" href="/assets/a34e4b9e-222c-4ced-8fad-8b3ea1ea6328.png">
     <link rel="stylesheet" href="style.css">
-    <!-- EmailJS CDN -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        /* 基本的なリセット */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'MS Sans Serif', sans-serif;
+            font-size: 11px;
+            background-color: #c0c0c0;
+            overflow: hidden;
+        }
+    </style>
 </head>
 <body>
-    <div id="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-family: Arial, sans-serif;">
-        Loading Galaxy RTS...
+    <!-- React アプリケーションのマウントポイント -->
+    <div id="root"></div>
+    
+    <!-- ローディング表示（React マウント前） -->
+    <div id="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: black; font-family: 'MS Sans Serif', sans-serif; font-size: 11px; background: #c0c0c0; padding: 20px; border: 2px inset #c0c0c0;">
+        Galaxy RTS 初期化中...
     </div>
+    
     <script>
         // エラーハンドリング
         window.addEventListener('error', function(e) {
@@ -22,7 +40,18 @@
             if (loading) {
                 loading.innerHTML = 'エラーが発生しました。コンソールを確認してください。';
                 loading.style.color = 'red';
+                loading.style.display = 'block';
             }
+        });
+        
+        // React マウント後にローディングを非表示
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            }, 1000);
         });
     </script>
     <script type="module" src="main.js"></script>

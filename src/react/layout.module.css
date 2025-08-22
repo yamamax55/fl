@@ -1,0 +1,472 @@
+/* Windows 95風レイアウトスタイル */
+
+/* メインアプリケーション */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #c0c0c0;
+  font-family: 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  overflow: hidden;
+}
+
+/* メニューバー */
+.menuBar {
+  display: flex;
+  background-color: #c0c0c0;
+  border-bottom: 1px solid #808080;
+  padding: 2px 4px;
+  position: relative;
+  z-index: 1000;
+}
+
+.menuItem {
+  padding: 4px 8px;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.menuItem:hover {
+  background-color: #316ac5;
+  color: white;
+}
+
+.menuItem.active {
+  background-color: #316ac5;
+  color: white;
+}
+
+.menuItem:focus {
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+
+/* ドロップダウンメニュー */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  min-width: 150px;
+  z-index: 1001;
+}
+
+.dropdownItem {
+  padding: 4px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dropdownItem:hover {
+  background-color: #316ac5;
+  color: white;
+}
+
+.dropdownItem:disabled {
+  color: #808080;
+  cursor: default;
+}
+
+.dropdownItem:disabled:hover {
+  background-color: transparent;
+  color: #808080;
+}
+
+.dropdownSeparator {
+  height: 1px;
+  background-color: #808080;
+  margin: 2px 0;
+}
+
+/* メインコンテンツエリア */
+.mainContent {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 星図キャンバスエリア */
+.starMapArea {
+  flex: 1;
+  position: relative;
+  background-color: #000;
+  border: 2px inset #c0c0c0;
+  margin: 2px;
+  overflow: hidden;
+}
+
+.starMapCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* サイドパネル */
+.sidePanel {
+  width: 300px;
+  background-color: #c0c0c0;
+  border: 2px inset #c0c0c0;
+  margin: 2px 2px 2px 0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease, margin 0.3s ease;
+}
+
+.sidePanel.closed {
+  width: 0;
+  margin-right: 2px;
+  border: none;
+  overflow: hidden;
+}
+
+.sidePanelHeader {
+  background-color: #316ac5;
+  color: white;
+  padding: 4px 8px;
+  font-weight: bold;
+  border-bottom: 1px solid #808080;
+}
+
+.sidePanelContent {
+  flex: 1;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+/* 情報パネル */
+.infoPanel {
+  background-color: #c0c0c0;
+  border: 2px inset #c0c0c0;
+  margin: 0 2px 2px 2px;
+  display: flex;
+  flex-direction: column;
+  min-height: 150px;
+  max-height: 50vh;
+  resize: vertical;
+  overflow: hidden;
+}
+
+.infoPanelExpanded {
+  margin: 0 2px 2px 2px;
+}
+
+.infoPanelHeader {
+  background-color: #316ac5;
+  color: white;
+  padding: 4px 8px;
+  font-weight: bold;
+  border-bottom: 1px solid #808080;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.infoPanelContent {
+  flex: 1;
+  display: flex;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.infoPanelSection {
+  flex: 1;
+  padding: 0 8px;
+  overflow-y: auto;
+}
+
+.infoPanelSection:not(:last-child) {
+  border-right: 1px solid #808080;
+}
+
+/* リサイズハンドル */
+.resizeHandle {
+  width: 100%;
+  height: 8px;
+  background-color: #c0c0c0;
+  cursor: ns-resize;
+  border-top: 1px solid #808080;
+  position: relative;
+}
+
+.resizeHandle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 2px;
+  background-color: #808080;
+  box-shadow: 0 2px 0 #808080;
+}
+
+/* ステータスバー */
+.statusBar {
+  display: flex;
+  background-color: #c0c0c0;
+  border-top: 1px solid #808080;
+  padding: 2px 4px;
+  font-size: 10px;
+  height: 20px;
+  align-items: center;
+}
+
+.statusLeft {
+  flex: 1;
+}
+
+.statusRight {
+  display: flex;
+  gap: 10px;
+}
+
+.statusItem {
+  padding: 0 8px;
+  border: 1px inset #c0c0c0;
+  background-color: #c0c0c0;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ボタンスタイル */
+.button {
+  background-color: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.button:hover {
+  background-color: #d4d4d4;
+}
+
+.button:active {
+  border: 2px inset #c0c0c0;
+}
+
+.button:disabled {
+  color: #808080;
+  cursor: default;
+  border: 2px outset #c0c0c0;
+}
+
+.button:disabled:hover {
+  background-color: #c0c0c0;
+}
+
+/* トグルボタン */
+.toggleButton {
+  background-color: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.toggleButton.active {
+  border: 2px inset #c0c0c0;
+  background-color: #b0b0b0;
+}
+
+/* フォームコントロール */
+.select {
+  background-color: white;
+  border: 2px inset #c0c0c0;
+  padding: 2px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.input {
+  background-color: white;
+  border: 2px inset #c0c0c0;
+  padding: 2px 4px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #316ac5;
+}
+
+/* チェックボックス */
+.checkbox {
+  width: 13px;
+  height: 13px;
+  border: 2px inset #c0c0c0;
+  background-color: white;
+  position: relative;
+  cursor: pointer;
+}
+
+.checkbox.checked::before {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 1px;
+  font-size: 10px;
+  color: black;
+  font-weight: bold;
+}
+
+/* リストスタイル */
+.list {
+  background-color: white;
+  border: 2px inset #c0c0c0;
+  overflow-y: auto;
+}
+
+.listItem {
+  padding: 2px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.listItem:hover {
+  background-color: #316ac5;
+  color: white;
+}
+
+.listItem.selected {
+  background-color: #316ac5;
+  color: white;
+}
+
+/* タブ */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #808080;
+}
+
+.tab {
+  background-color: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  border-bottom: none;
+  padding: 4px 12px;
+  cursor: pointer;
+  margin-right: 2px;
+}
+
+.tab.active {
+  background-color: white;
+  border: 2px outset #c0c0c0;
+  border-bottom: 2px solid white;
+  position: relative;
+  top: 1px;
+}
+
+.tabContent {
+  background-color: white;
+  border: 2px inset #c0c0c0;
+  border-top: none;
+  padding: 8px;
+  flex: 1;
+}
+
+/* グループボックス */
+.groupBox {
+  border: 2px inset #c0c0c0;
+  margin: 8px 0;
+  padding: 8px;
+  position: relative;
+}
+
+.groupBoxTitle {
+  position: absolute;
+  top: -6px;
+  left: 8px;
+  background-color: #c0c0c0;
+  padding: 0 4px;
+  font-weight: bold;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 1024px) {
+  .sidePanel {
+    width: 250px;
+  }
+  
+  .infoPanelContent {
+    flex-direction: column;
+  }
+  
+  .infoPanelSection {
+    border-right: none;
+    border-bottom: 1px solid #808080;
+    padding: 8px 0;
+  }
+  
+  .infoPanelSection:last-child {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .app {
+    font-size: 10px;
+  }
+  
+  .menuItem {
+    padding: 3px 6px;
+  }
+  
+  .sidePanel {
+    width: 200px;
+  }
+}
+
+/* アニメーション */
+@keyframes slideIn {
+  from {
+    width: 0;
+    margin-right: 2px;
+  }
+  to {
+    width: 300px;
+    margin-right: 0;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    width: 300px;
+    margin-right: 0;
+  }
+  to {
+    width: 0;
+    margin-right: 2px;
+  }
+}
+
+.sidePanel.opening {
+  animation: slideIn 0.3s ease;
+}
+
+.sidePanel.closing {
+  animation: slideOut 0.3s ease;
+}
+
+/* 新しいレイアウトモード専用スタイル */
+.layoutBottomOnly .sidePanel {
+  display: none;
+}
+
+.layoutBottomOnly .starMapArea {
+  margin-right: 2px;
+}
+
+.layoutBottomOnly .infoPanel {
+  max-height: 60vh;
+}

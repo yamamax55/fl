@@ -293,13 +293,13 @@
   ],
   "factions": {
     "federation": {
-      "name": "自由連邦",
+      "name": "星系連邦",
       "color": "0x0066CC",
       "symbol": "★",
       "description": "民主主義と自由を重んじる連邦国家"
     },
     "empire": {
-      "name": "銀河帝国",
+      "name": "宇宙帝国",
       "color": "0xCC0066",
       "symbol": "♔",
       "description": "強力な中央集権による統一帝国"
