@@ -382,10 +382,12 @@ export class Fleet extends PIXI.Container {
     
     // 選択状態にする
     select() {
-        // 他の艦隊の選択を解除（同盟艦隊のみを操作可能）
-        if (this.faction === 'alliance') {
+        console.log(`${this.name}.select() 呼び出し - faction: ${this.faction}, playerFaction: ${window.gameState?.playerFaction}`);
+        
+        // プレイヤー陣営の艦隊のみ選択可能
+        if (this.faction === window.gameState?.playerFaction) {
             window.gameState.fleets.forEach(fleet => {
-                if (fleet !== this && fleet.faction === 'alliance') {
+                if (fleet !== this && fleet.faction === this.faction) {
                     // 他の艦隊のゴーストフリートの状態を保存
                     const wasGhostVisible = fleet.ghostFleet && fleet.ghostFleet.visible && 
                                           (fleet.targetX !== fleet.x || fleet.targetY !== fleet.y);
@@ -401,6 +403,7 @@ export class Fleet extends PIXI.Container {
             });
             
             this.isSelected = true;
+            console.log(`${this.name} 選択完了: isSelected = ${this.isSelected}`);
             
             // 選択エフェクト
             if (window.gameState.effects) {
@@ -413,6 +416,8 @@ export class Fleet extends PIXI.Container {
             }
             
             console.log(`${this.name} が選択されました (位置: ${Math.round(this.x)}, ${Math.round(this.y)})`);
+        } else {
+            console.log(`${this.name} 選択失敗: プレイヤー陣営ではありません (faction: ${this.faction}, playerFaction: ${window.gameState?.playerFaction})`);
         }
     }
     
@@ -932,7 +937,8 @@ export class Fleet extends PIXI.Container {
     
     // ポインターダウン処理
     onPointerDown(event) {
-        if (event.button === 0 && this.faction === 'alliance') { // 左クリック - 艦隊選択（同盟艦隊のみ）
+        console.log(`艦隊クリック: ${this.name} (${this.faction}) - プレイヤー陣営: ${window.gameState?.playerFaction}`);
+        if (event.button === 0 && this.faction === window.gameState.playerFaction) { // 左クリック - 艦隊選択（プレイヤー陣営のみ）
             const currentTime = Date.now();
             const timeSinceLastClick = currentTime - (this.lastClickTime || 0);
             this.lastClickTime = currentTime;
@@ -948,7 +954,11 @@ export class Fleet extends PIXI.Container {
             
             event.stopPropagation();
             console.log(`${this.name}: 選択されました (モード: ${this.interactionMode})`);
-        } else if (event.button === 2 && this.isSelected) { // 右クリック - ドラッグ開始
+        } else {
+            console.log(`${this.name}: 選択できません - 理由: button=${event.button}, faction=${this.faction}, playerFaction=${window.gameState?.playerFaction}, isSelected=${this.isSelected}`);
+        }
+        
+        if (event.button === 2 && this.isSelected) { // 右クリック - ドラッグ開始
             event.stopPropagation();
             this.isDragging = true;
             this.dragStartX = event.global.x;

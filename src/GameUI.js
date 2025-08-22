@@ -269,11 +269,7 @@ export class GameUI {
         this.battleStatusContainer.y = 50;
         this.rightPanel.addChild(this.battleStatusContainer);
         
-        // 戦力比グラフコンテナ
-        this.forceRatioContainer = new PIXI.Container();
-        this.forceRatioContainer.x = 15;
-        this.forceRatioContainer.y = 150;
-        this.rightPanel.addChild(this.forceRatioContainer);
+        // 戦力比グラフコンテナ（削除済み）
     }
     
     // 下部コマンドパネル初期化
@@ -369,7 +365,7 @@ export class GameUI {
     // 選択艦隊のモード設定
     setAllSelectedFleetsMode(mode) {
         const selectedFleets = window.gameState.fleets.filter(fleet => 
-            fleet.isSelected && fleet.faction === 'alliance'
+            fleet.isSelected && fleet.faction === window.gameState.playerFaction
         );
         selectedFleets.forEach(fleet => {
             if (mode === 'move') {
@@ -380,10 +376,10 @@ export class GameUI {
         });
     }
     
-    // 全同盟艦隊選択
+    // 全プレイヤー艦隊選択
     selectAllAlliance() {
         window.gameState.fleets.forEach(fleet => {
-            if (fleet.faction === 'alliance' && fleet.currentHP > 0) {
+            if (fleet.faction === window.gameState.playerFaction && fleet.currentHP > 0) {
                 fleet.select();
             }
         });
@@ -668,67 +664,10 @@ export class GameUI {
             yOffset += 20;
         });
         
-        // 戦力比グラフを更新
-        this.updateForceRatioGraph(allianceHP, allianceMaxHP, empireHP, empireMaxHP);
+        // 戦力比グラフ更新（削除済み）
     }
     
-    // 戦力比グラフ更新
-    updateForceRatioGraph(allianceHP, allianceMaxHP, empireHP, empireMaxHP) {
-        this.forceRatioContainer.removeChildren();
-        
-        const graphTitle = new PIXI.Text('戦力比', this.textStyle);
-        graphTitle.x = 0;
-        graphTitle.y = 0;
-        this.forceRatioContainer.addChild(graphTitle);
-        
-        const totalMaxHP = allianceMaxHP + empireMaxHP;
-        const totalCurrentHP = allianceHP + empireHP;
-        
-        if (totalMaxHP > 0) {
-            const barWidth = 200;
-            const barHeight = 20;
-            const barY = 30;
-            
-            // 背景バー
-            const bgBar = new PIXI.Graphics();
-            bgBar.rect(0, barY, barWidth, barHeight);
-            bgBar.fill(0x333333);
-            bgBar.stroke({ width: 1, color: 0x666666 });
-            this.forceRatioContainer.addChild(bgBar);
-            
-            // 同盟軍バー
-            const allianceRatio = allianceHP / totalMaxHP;
-            const allianceBarWidth = barWidth * allianceRatio;
-            if (allianceBarWidth > 0) {
-                const allianceBar = new PIXI.Graphics();
-                allianceBar.rect(0, barY, allianceBarWidth, barHeight);
-                allianceBar.fill(0x4444ff);
-                this.forceRatioContainer.addChild(allianceBar);
-            }
-            
-            // 帝国軍バー
-            const empireRatio = empireHP / totalMaxHP;
-            const empireBarWidth = barWidth * empireRatio;
-            if (empireBarWidth > 0) {
-                const empireBar = new PIXI.Graphics();
-                empireBar.rect(barWidth - empireBarWidth, barY, empireBarWidth, barHeight);
-                empireBar.fill(0xff4444);
-                this.forceRatioContainer.addChild(empireBar);
-            }
-            
-            // パーセンテージ表示
-            const alliancePercent = Math.round((allianceHP / totalCurrentHP) * 100) || 0;
-            const empirePercent = Math.round((empireHP / totalCurrentHP) * 100) || 0;
-            
-            const percentText = new PIXI.Text(
-                `同盟 ${alliancePercent}% : ${empirePercent}% 帝国`, 
-                this.smallTextStyle
-            );
-            percentText.x = 0;
-            percentText.y = barY + 30;
-            this.forceRatioContainer.addChild(percentText);
-        }
-    }
+    // 戦力比グラフ更新（削除済み）
     
     // 艦隊状態取得
     getFleetStatus(fleet) {
@@ -762,14 +701,17 @@ export class GameUI {
     checkVictoryCondition() {
         const allianceFleets = window.gameState.fleets.filter(f => f.faction === 'alliance' && f.currentHP > 0);
         const empireFleets = window.gameState.fleets.filter(f => f.faction === 'empire' && f.currentHP > 0);
+        const playerFaction = window.gameState.playerFaction;
         
         if (allianceFleets.length === 0) {
             this.gameEnded = true;
-            this.showGameOver('帝国軍の勝利！', 'defeat');
+            const isPlayerVictory = playerFaction === 'empire';
+            this.showGameOver('帝国軍の勝利！', isPlayerVictory ? 'victory' : 'defeat');
             return true;
         } else if (empireFleets.length === 0) {
             this.gameEnded = true;
-            this.showGameOver('同盟軍の勝利！', 'victory');
+            const isPlayerVictory = playerFaction === 'alliance';
+            this.showGameOver('同盟軍の勝利！', isPlayerVictory ? 'victory' : 'defeat');
             return true;
         }
         return false;

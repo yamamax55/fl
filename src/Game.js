@@ -11,6 +11,7 @@ export class Game {
         this.app = null;
         this.fleets = [];
         this.ui = null;
+        this.playerFaction = 'alliance'; // デフォルト陣営（main.jsで上書きされる）
         this.dragSelection = {
             isDragging: false,
             startX: 0,
@@ -52,6 +53,23 @@ export class Game {
         document.body.appendChild(this.app.canvas);
         console.log('PIXI Application初期化完了');
 
+        await this.initGameComponents();
+    }
+    
+    // 既存のアプリケーションを使用してゲームを初期化
+    async initWithExistingApp() {
+        console.log('Galaxy RTS初期化開始（既存アプリ使用）...');
+        
+        if (!this.app) {
+            throw new Error('PIXI Application が設定されていません');
+        }
+        
+        await this.initGameComponents();
+    }
+    
+    // ゲームコンポーネントの初期化
+    async initGameComponents() {
+
         // データベースサービス初期化
         await this.dbService.initialize();
 
@@ -73,11 +91,7 @@ export class Game {
         // ゲームループ開始
         this.startGameLoop();
         
-        // ローディング表示を削除
-        const loadingElement = document.getElementById('loading');
-        if (loadingElement) {
-            loadingElement.remove();
-        }
+        // ローディング表示削除はmain.jsで処理
         
         // オーディオ開始（ユーザー操作後）
         document.addEventListener('click', () => {
@@ -89,10 +103,18 @@ export class Game {
     }
     
     createFleets() {
-        // 自由惑星同盟艦隊（青色）- ゲームエリア内に配置
+        console.log(`艦隊作成開始 - プレイヤー陣営: ${this.playerFaction}`);
+        
+        // 常に左側に同盟、右側に帝国を配置
+        this.createAllianceFleets();
+        this.createEmpireFleets();
+    }
+    
+    createAllianceFleets() {
+        // 自由惑星同盟艦隊（青色）- 左側に配置
         for (let i = 0; i < 3; i++) {
             const fleet = new Fleet(
-                this.gameArea.x + 50 + i * 60,    // x座標（ゲームエリア内）
+                this.gameArea.x + 50 + i * 60,    // x座標（ゲームエリア左側）
                 this.gameArea.y + 220 + i * 80,   // y座標（ゲームエリア内）
                 0x0000ff,             // 青色
                 `同盟第${i + 1}艦隊`,   // 名前
@@ -108,9 +130,14 @@ export class Game {
             
             // 司令官情報をロード
             this.loadFleetCommanderInfo(fleet);
+            
+            const isPlayerControlled = this.playerFaction === 'alliance';
+            console.log(`同盟艦隊作成: ${fleet.name} (プレイヤー制御: ${isPlayerControlled})`);
         }
-        
-        // 銀河帝国艦隊（赤色）- ゲームエリア内に配置
+    }
+    
+    createEmpireFleets() {
+        // 銀河帝国艦隊（赤色）- 右側に配置
         for (let i = 0; i < 3; i++) {
             const fleet = new Fleet(
                 this.gameArea.x + this.gameArea.width - 110 + i * 60,  // x座標（ゲームエリア右側）
@@ -129,6 +156,9 @@ export class Game {
             
             // 司令官情報をロード
             this.loadFleetCommanderInfo(fleet);
+            
+            const isPlayerControlled = this.playerFaction === 'empire';
+            console.log(`帝国艦隊作成: ${fleet.name} (プレイヤー制御: ${isPlayerControlled})`);
         }
     }
     
@@ -299,9 +329,9 @@ export class Game {
                 const minY = Math.min(startY, y);
                 const maxY = Math.max(startY, y);
                 
-                // 範囲内の味方艦隊を選択（プレイヤーは同盟軍を操作）
+                // 範囲内の味方艦隊を選択（プレイヤー陣営を操作）
                 this.fleets.forEach(fleet => {
-                    if (fleet.faction === 'alliance' && 
+                    if (fleet.faction === this.playerFaction && 
                         fleet.x >= minX && fleet.x <= maxX && 
                         fleet.y >= minY && fleet.y <= maxY) {
                         fleet.select();
@@ -320,41 +350,42 @@ export class Game {
     
     // 戦場の霊（Fog of War）システム - ZOCベースの視界管理
     updateVisibility() {
-        // 帝国艦隊の視認性を判定
-        const empireFleets = this.fleets.filter(fleet => fleet.faction === 'empire' && fleet.currentHP > 0);
-        const allianceFleets = this.fleets.filter(fleet => fleet.faction === 'alliance' && fleet.currentHP > 0);
+        // プレイヤー陣営と敵陣営を動的に決定
+        const playerFleets = this.fleets.filter(fleet => fleet.faction === this.playerFaction && fleet.currentHP > 0);
+        const enemyFleets = this.fleets.filter(fleet => fleet.faction !== this.playerFaction && fleet.currentHP > 0);
         
-        empireFleets.forEach(empireFleet => {
+        // 敵艦隊の視認性を判定
+        enemyFleets.forEach(enemyFleet => {
             const currentTime = Date.now();
             
             // 戦闘状態の時間経過をチェック
-            if (empireFleet.isInCombat && (currentTime - empireFleet.lastCombatTime) > empireFleet.combatVisibilityDuration) {
-                empireFleet.isInCombat = false;
+            if (enemyFleet.isInCombat && (currentTime - enemyFleet.lastCombatTime) > enemyFleet.combatVisibilityDuration) {
+                enemyFleet.isInCombat = false;
             }
             
-            // 視認性判定：ZOC内 または 戦闘中
-            const isInZOC = allianceFleets.some(allianceFleet => 
-                allianceFleet.isInZOCRange(empireFleet)
+            // 視認性判定：プレイヤー艦隊のZOC内 または 戦闘中
+            const isInZOC = playerFleets.some(playerFleet => 
+                playerFleet.isInZOCRange(enemyFleet)
             );
-            const isInCombat = empireFleet.isInCombat;
+            const isInCombat = enemyFleet.isInCombat;
             const isVisible = isInZOC || isInCombat;
             
             // 艦隊本体、HPバー、番号を連動表示/非表示
-            empireFleet.visible = isVisible;
+            enemyFleet.visible = isVisible;
             
             // デバッグログ（戦闘状態時のみ）
             if (isInCombat && !isInZOC) {
-                console.log(`${empireFleet.name} 戦闘特例表示中 (ZOC外だが戦闘中)`);
+                console.log(`${enemyFleet.name} 戦闘特例表示中 (ZOC外だが戦闘中)`);
             }
         });
         
-        // 同盟艦隊も戦闘状態をリセット（時間経過チェック）
-        allianceFleets.forEach(allianceFleet => {
+        // プレイヤー艦隊も戦闘状態をリセット（時間経過チェック）
+        playerFleets.forEach(playerFleet => {
             const currentTime = Date.now();
-            if (allianceFleet.isInCombat && (currentTime - allianceFleet.lastCombatTime) > allianceFleet.combatVisibilityDuration) {
-                allianceFleet.isInCombat = false;
+            if (playerFleet.isInCombat && (currentTime - playerFleet.lastCombatTime) > playerFleet.combatVisibilityDuration) {
+                playerFleet.isInCombat = false;
             }
-            allianceFleet.visible = true; // 同盟艦隊は常に表示
+            playerFleet.visible = true; // プレイヤー艦隊は常に表示
         });
     }
     
